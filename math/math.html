@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing mathematical equations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            background-color: #ffffff;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #controls {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            margin: 15px;
+        }
+
+        body.dark-mode #controls {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        body.dark-mode input {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        body.dark-mode button {
+            background: #4a5568;
+        }
+
+        #canvas {
+            flex: 1;
+            touch-action: none;
+        }
+
+        .controls-right {
+            position: fixed;
+            top: 100px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .controls-left {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .scale-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .created-by {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode .scale-info {
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-mode .created-by {
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        }
+
+        .equations-list {
+            position: fixed;
+            top: 150px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        body.dark-mode .equations-list {
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .equation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 6px;
+        }
+
+        body.dark-mode .equation-item {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .equation-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+
+        .equation-info {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .equation-actions button {
+            width: 30px;
+            height: 30px;
+            padding: 5px;
+            background: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <div class="equations-list" id="equationsList">
+            <h3>Equations List</h3>
+            <div id="equationsContainer"></div>
+        </div>
+
+        <div class="controls-right">
+            <button onclick="zoom(1.2)" title="zoom in">➕</button>
+            <button onclick="zoom(0.8)" title="zoom out">➖</button>
+        </div>
+
+        <div class="controls-left">
+            <button onclick="toggleDarkMode()" title="change mode">🌓</button>
+            <button onclick="clearCanvas()" title="clear all">❌</button>
+        </div>
+
+        <div class="scale-info" id="scaleInfo">Scale: 1 Unit = 40px</div>
+        <div class="created-by">Created by: <a href="https://github.com/metidev" target="_blank" title="metidev"
+                style="text-decoration: none;color: #007bff;">MetiDev</a></div>
+
+        <div id="controls">
+            <input type="text" id="equationInput" placeholder="e.g: 2x+3 or x^2-4x+4"
+                onkeypress="handleKeyPress(event)">
+            <button onclick="drawEquation()" title="Drawing diagram">📈</button>
+        </div>
+
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('equationsList').style.display = 'none';
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let currentScale = 40;
+        let gridStep = 1;
+        let equations = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 60;
+            draw();
+        }
+
+        function zoom(factor) {
+            currentScale *= factor;
+            currentScale = Math.min(Math.max(20, currentScale), 200);
+            gridStep = calculateGridStep();
+            updateScaleInfo();
+            draw();
+        }
+
+        function calculateGridStep() {
+            if (currentScale >= 100) return 0.5;
+            if (currentScale >= 60) return 1;
+            if (currentScale >= 40) return 2;
+            return 5;
+        }
+
+        function updateScaleInfo() {
+            document.getElementById('scaleInfo').textContent =
+                `Scale: 1 Unit = ${currentScale} pixel`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawAxes();
+            equations.forEach(eq => plotEquation(eq));
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = document.body.classList.contains('dark-mode') ? '#333' : '#ddd';
+            ctx.lineWidth = 0.5;
+
+            const step = currentScale * gridStep;
+            const startX = (canvas.width / 2 + currentScale) % step;
+            const startY = (canvas.height / 2 + currentScale) % step;
+
+            for (let x = startX; x < canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let y = startY; y < canvas.height; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = document.body.classList.contains('dark-mode') ? '#fff' : '#000';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            ctx.fillStyle = document.body.classList.contains('dark-mode') ? '#fff' : '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+
+            const xStart = Math.ceil(-canvas.width / (2 * currentScale));
+            const xEnd = Math.floor(canvas.width / (2 * currentScale));
+            for (let x = xStart; x <= xEnd; x += gridStep) {
+                const screenX = canvas.width / 2 + x * currentScale;
+                ctx.fillText(x.toFixed(1), screenX, canvas.height / 2 + 15);
+            }
+
+            const yStart = Math.ceil(-canvas.height / (2 * currentScale));
+            const yEnd = Math.floor(canvas.height / (2 * currentScale));
+            for (let y = yStart; y <= yEnd; y += gridStep) {
+                const screenY = canvas.height / 2 - y * currentScale;
+                ctx.fillText(y.toFixed(1), canvas.width / 2 + 10, screenY);
+            }
+        }
+
+        function parseEquation(input) {
+            let equationStr = input.trim().toLowerCase();
+
+            if (!equationStr.startsWith('y')) {
+                equationStr = 'y=' + equationStr;
+            }
+
+            const parts = equationStr.split('=');
+            if (parts.length < 2) return null;
+
+            equationStr = parts[1].trim();
+            let a = 0, b = 0, c = 0;
+            let valid = false;
+
+            if (equationStr.includes('x^2')) {
+                const matches = equationStr.match(/^(-?\d*\.?\d*)x\^2\s*([+-]\s*\d*\.?\d*x)?\s*([+-]\s*\d*\.?\d*)?$/);
+                if (matches) {
+                    valid = true;
+                    a = matches[1] ? parseFloat(matches[1]) || 1 : 1;
+                    b = matches[2] ? parseFloat(matches[2].replace(/[^0-9.-]/g, '')) || 0 : 0;
+                    c = matches[3] ? parseFloat(matches[3].replace(/[^0-9.-]/g, '')) || 0 : 0;
+                }
+            } else {
+                const matches = equationStr.match(/^(-?\d*\.?\d*)x\s*([+-]\s*\d*\.?\d*)?$/);
+                if (matches) {
+                    valid = true;
+                    a = 0;
+                    b = matches[1] ? parseFloat(matches[1]) || 1 : 0;
+                    c = matches[2] ? parseFloat(matches[2].replace(/[^0-9.-]/g, '')) || 0 : 0;
+                }
+                else if (/^-?\d+\.?\d*$/.test(equationStr)) {
+                    valid = true;
+                    c = parseFloat(equationStr);
+                }
+            }
+
+            if (!valid || (a === 0 && b === 0 && c === 0 && equationStr !== "0")) {
+                return null;
+            }
+
+            return { a, b, c, color: getRandomColor() };
+        }
+        function plotEquation(equation) {
+            ctx.beginPath();
+            ctx.strokeStyle = equation.color;
+            ctx.lineWidth = 2;
+
+            for (let x = -canvas.width / (2 * currentScale); x < canvas.width / (2 * currentScale); x += 0.1) {
+                const y = equation.a * x ** 2 + equation.b * x + equation.c;
+                const screenX = canvas.width / 2 + x * currentScale;
+                const screenY = canvas.height / 2 - y * currentScale;
+
+                if (x === -canvas.width / (2 * currentScale)) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+
+            ctx.stroke();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                drawEquation();
+            }
+        }
+
+        function drawEquation() {
+            const input = document.getElementById('equationInput');
+            const equation = parseEquation(input.value);
+
+            if (!equation) {
+                alert('The equation format is invalid!');
+                return;
+            }
+
+            equations.push(equation);
+            draw();
+            input.value = "";
+        }
+
+        function clearCanvas() {
+            equations = [];
+            currentScale = 40;
+            gridStep = 1;
+            updateScaleInfo();
+            draw();
+            updateEquationsList();
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            draw();
+        }
+
+        function getRandomColor() {
+            return '#' + Math.floor(Math.random() * 16777215).toString(16);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+
+        function updateEquationsList() {
+            const container = document.getElementById('equationsContainer');
+            const listContainer = document.getElementById('equationsList');
+
+            container.innerHTML = '';
+
+            if (equations.length === 0) {
+                listContainer.style.display = 'none';
+                return;
+            }
+            listContainer.style.display = 'block';
+
+            equations.forEach((eq, index) => {
+                const eqElement = document.createElement('div');
+                eqElement.className = 'equation-item';
+
+                const equationText = getEquationText(eq);
+
+                eqElement.innerHTML = `
+                    <div class="equation-color" style="background:${eq.color}"></div>
+                    <div class="equation-info">${equationText}</div>
+                    <div class="equation-actions">
+                        <button onclick="removeEquation(${index})" title="Delete">❌</button>
+                    </div>
+                `;
+
+                container.appendChild(eqElement);
+            });
+        }
+
+        function getEquationText(equation) {
+            let terms = [];
+            if (equation.a !== 0) terms.push(`${equation.a}x²`);
+            if (equation.b !== 0) terms.push(`${equation.b}x`);
+            if (equation.c !== 0 || terms.length === 0) terms.push(equation.c);
+
+            return `y = ${terms.join(' + ').replace(/\+\s-/g, ' - ')}`;
+        }
+
+        function removeEquation(index) {
+            equations.splice(index, 1);
+            draw();
+            updateEquationsList();
+        }
+
+        function drawEquation() {
+            const input = document.getElementById('equationInput');
+            const equation = parseEquation(input.value);
+
+            if (!equation) {
+                alert('The equation format is invalid!');
+                return;
+            }
+
+            equations.push(equation);
+            draw();
+            input.value = "";
+            updateEquationsList();
+        }
+    </script>
+</body>
+
+</html>

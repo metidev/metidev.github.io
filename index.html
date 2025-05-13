@@ -181,9 +181,8 @@
           </li>
 
           <li class="navbar-item">
-            <button class="navbar-link" style="
-            color: var(--light-gray-70);
-        " disabled data-nav-link>Portfolio</button>
+            <button class="navbar-link" 
+        data-nav-link>Portfolio</button>
           </li>
 
           <li class="navbar-item">
@@ -538,7 +537,7 @@
 
             <li class="timeline-item">
 
-              <h4 class="h4 timeline-item-title">Shahid Shamsipur College</h4>
+              <h4 class="h4 timeline-item-title">Shamsipour technical and Vocational College (STVC)</h4>
 
               <span>2024 — Present</span>
 
@@ -767,36 +766,19 @@
 
           <ul class="project-list">
 
+
             <li class="project-item  active" data-filter-item data-category="web development">
-              <a href="#">
+              <a href="./math/math.html" target="_blank">
 
                 <figure class="project-img">
                   <div class="project-item-icon-box">
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-1.jpg" alt="finance" loading="lazy">
+                  <img src="./assets/images/project-2.png" alt="Graphing the equation" loading="lazy">
                 </figure>
 
-                <h3 class="project-title">Finance</h3>
-
-                <p class="project-category">Web development</p>
-
-              </a>
-            </li>
-
-            <li class="project-item  active" data-filter-item data-category="web development">
-              <a href="#">
-
-                <figure class="project-img">
-                  <div class="project-item-icon-box">
-                    <ion-icon name="eye-outline"></ion-icon>
-                  </div>
-
-                  <img src="./assets/images/project-2.png" alt="orizon" loading="lazy">
-                </figure>
-
-                <h3 class="project-title">Orizon</h3>
+                <h3 class="project-title">Graphing the equation</h3>
 
                 <p class="project-category">Web development</p>
 
@@ -804,17 +786,17 @@
             </li>
 
             <li class="project-item  active" data-filter-item data-category="web design">
-              <a href="#">
+              <a href="./rick&morty/index.html" target="_blank">
 
                 <figure class="project-img">
                   <div class="project-item-icon-box">
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-3.jpg" alt="fundo" loading="lazy">
+                  <img src="./assets/images/project-1.png" alt="rick and morty" loading="lazy">
                 </figure>
 
-                <h3 class="project-title">Fundo</h3>
+                <h3 class="project-title">Wiki Rick & Morty</h3>
 
                 <p class="project-category">Web design</p>
 
@@ -822,24 +804,24 @@
             </li>
 
             <li class="project-item  active" data-filter-item data-category="applications">
-              <a href="#">
+              <a href="https://github.com/metidev/Video-player" target="_blank">
 
                 <figure class="project-img">
                   <div class="project-item-icon-box">
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-4.png" alt="brawlhalla" loading="lazy">
+                  <img src="./assets/images/project-4.png" alt="Video Player" loading="lazy">
                 </figure>
 
-                <h3 class="project-title">Brawlhalla</h3>
+                <h3 class="project-title">Video Player</h3>
 
                 <p class="project-category">Applications</p>
 
               </a>
             </li>
 
-            <li class="project-item  active" data-filter-item data-category="web design">
+            <!-- <li class="project-item  active" data-filter-item data-category="web design">
               <a href="#">
 
                 <figure class="project-img">
@@ -855,9 +837,9 @@
                 <p class="project-category">Web design</p>
 
               </a>
-            </li>
+            </li> -->
 
-            <li class="project-item  active" data-filter-item data-category="web design">
+            <!-- <li class="project-item  active" data-filter-item data-category="web design">
               <a href="#">
 
                 <figure class="project-img">
@@ -873,9 +855,9 @@
                 <p class="project-category">Web design</p>
 
               </a>
-            </li>
+            </li> -->
 
-            <li class="project-item  active" data-filter-item data-category="web development">
+            <!-- <li class="project-item  active" data-filter-item data-category="web development">
               <a href="#">
 
                 <figure class="project-img">
@@ -891,9 +873,9 @@
                 <p class="project-category">Web development</p>
 
               </a>
-            </li>
+            </li> -->
 
-            <li class="project-item  active" data-filter-item data-category="applications">
+            <!-- <li class="project-item  active" data-filter-item data-category="applications">
               <a href="#">
 
                 <figure class="project-img">
@@ -909,9 +891,9 @@
                 <p class="project-category">Applications</p>
 
               </a>
-            </li>
+            </li> -->
 
-            <li class="project-item  active" data-filter-item data-category="web development">
+            <!-- <li class="project-item  active" data-filter-item data-category="web development">
               <a href="#">
 
                 <figure class="project-img">
@@ -927,7 +909,7 @@
                 <p class="project-category">Web development</p>
 
               </a>
-            </li>
+            </li> -->
 
           </ul>
 
@@ -1155,7 +1137,7 @@
 
           <h3 class="h3 form-title">Contact Form</h3>
 
-          <form action="#" class="form" data-form>
+          <form action="#" class="form" data-form onsubmit="return handleSubmit(event)">
 
             <div class="input-wrapper">
               <input type="text" name="fullname" class="form-input" placeholder="Full name" required data-form-input>
@@ -1165,12 +1147,14 @@
 
             <textarea name="message" class="form-input" placeholder="Your Message" required data-form-input></textarea>
 
-            <button class="form-btn" type="submit" disabled data-form-btn>
+            <button class="form-btn" type="submit" data-form-btn>
               <ion-icon name="paper-plane"></ion-icon>
               <span>Send Message</span>
             </button>
 
           </form>
+
+          
 
         </section>
 
@@ -1189,7 +1173,24 @@
     - custom js link
   -->
   <script src="./assets/js/script.js"></script>
-
+  <script>
+    function handleSubmit(event) {
+      event.preventDefault();
+      
+      const form = event.target;
+      const fullname = form.querySelector('[name="fullname"]').value;
+      const email = form.querySelector('[name="email"]').value;
+      const message = form.querySelector('[name="message"]').value;
+      
+      const subject = `Message from ${fullname}`;
+      const body = `Name: ${fullname}\nEmail: ${email}\n\nMessage:\n${message}`;
+      
+      const mailtoLink = `mailto:mehdicode3@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      window.location.href = mailtoLink;
+      return false;
+    }
+  </script>
   <!--
     - ionicon link
   -->
