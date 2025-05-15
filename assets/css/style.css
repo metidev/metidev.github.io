@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
 
 :root {
 
@@ -58,7 +59,7 @@
    */
 
   /* font-family */
-  --ff-poppins: 'Poppins', sans-serif;
+  --ff-poppins: 'Vazirmatn' , sans-serif;
 
   /* font-size */
   --fs-1: 24px;
@@ -95,9 +96,98 @@
 
 }
 
+/* Add after the :root section */
+[dir="rtl"] {
+  text-align: right;
+}
 
+[dir="rtl"] .sidebar-info {
+  flex-direction: row-reverse;
+}
 
+[dir="rtl"] .contact-item {
+  flex-direction: row-reverse;
+}
 
+[dir="rtl"] .social-list {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .timeline-item:not(:last-child)::before {
+  right: -30px;
+  left: auto;
+}
+
+[dir="rtl"] .timeline-item::after {
+  right: -33px;
+  left: auto;
+}
+
+[dir="rtl"] .timeline-list {
+  margin-right: 45px;
+  margin-left: 0;
+}
+
+[dir="rtl"] .article-title::after {
+  right: 0;
+  left: auto;
+}
+
+[dir="rtl"] .service-item {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .service-content-box {
+  text-align: right;
+}
+
+[dir="rtl"] .blog-meta {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .form-btn {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.language-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--border-gradient-onyx);
+  transition: var(--transition-1);
+  height: 25px;
+  width: 40px;
+}
+
+.language-switch:hover {
+  background: var(--bg-gradient-yellow-1);
+}
+
+.language-switch ion-icon {
+  font-size: 20px;
+  color: var(--orange-yellow-crayola);
+}
+
+/* Add RTL support for larger screens */
+@media (min-width: 1024px) {
+  [dir="rtl"] .navbar {
+    right: auto;
+    left: 0;
+  }
+  
+  [dir="rtl"] .sidebar-info {
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 1250px) {
+  [dir="rtl"] .sidebar-info {
+    flex-direction: column;
+  }
+}
 
 /*-----------------------------------*\
   #RESET

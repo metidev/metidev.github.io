@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mehdi Anvari | Personal Website</title>
+  <title data-translate="title">Mehdi Anvari | Personal Website</title>
 
   <!--
     - favicon
@@ -49,9 +49,9 @@
         </figure>
 
         <div class="info-content">
-          <h1 class="name" title="Mehdi Anvari">Mehdi Anvari</h1>
+          <h1 class="name" title="Mehdi Anvari" data-translate="MyName">Mehdi Anvari</h1>
 
-          <p class="title">Web developer</p>
+          <p class="title" data-translate="position">Web Developer</p>
         </div>
 
         <button class="info_more-btn" data-sidebar-btn>
@@ -75,7 +75,7 @@
             </div>
 
             <div class="contact-info">
-              <p class="contact-title">Email</p>
+              <p class="contact-title" data-translate="email">Email</p>
 
               <a href="mailto:mehdicode3@gmail.com" class="contact-link">mehdicode3@gmail.com</a>
             </div>
@@ -89,7 +89,7 @@
             </div>
 
             <div class="contact-info">
-              <p class="contact-title">Phone</p>
+              <p class="contact-title" data-translate="phone">Phone</p>
 
               <a href="tel:+989999923340" class="contact-link">+989999923340</a>
             </div>
@@ -103,7 +103,7 @@
             </div>
 
             <div class="contact-info">
-              <p class="contact-title">Age</p>
+              <p class="contact-title" data-translate="age">Age</p>
 
               <time id="age" datetime="2006-03-23" id="birthday"></time>
               <!-- <span id="age"></span> -->
@@ -118,9 +118,9 @@
             </div>
 
             <div class="contact-info">
-              <p class="contact-title">Location</p>
+              <p class="contact-title" data-translate="location">Location</p>
 
-              <address>Iran, Tehran</address>
+              <address data-translate="address">Iran, Tehran</address>
             </div>
 
           </li>
@@ -174,26 +174,29 @@
         <ul class="navbar-list">
 
           <li class="navbar-item">
-            <button class="navbar-link  active" data-nav-link>About</button>
+            <button class="navbar-link active" data-nav-link data-nav-target="about" data-translate="about">About</button>
           </li>
 
           <li class="navbar-item">
-            <button class="navbar-link" data-nav-link>Resume</button>
+            <button class="navbar-link" data-nav-link data-nav-target="resume" data-translate="resume">Resume</button>
           </li>
 
           <li class="navbar-item">
-            <button class="navbar-link" 
-        data-nav-link>Portfolio</button>
+            <button class="navbar-link" data-nav-link data-nav-target="portfolio" data-translate="portfolio">Portfolio</button>
           </li>
 
           <li class="navbar-item">
-            <button class="navbar-link" style="
-            color: var(--light-gray-70);
-        " disabled data-nav-link>Blog</button>
+            <button class="navbar-link" style="color: var(--light-gray-70);" disabled data-nav-link data-nav-target="blog" data-translate="blog">Blog</button>
           </li>
 
           <li class="navbar-item">
-            <button class="navbar-link" data-nav-link>Contact</button>
+            <button class="navbar-link" data-nav-link data-nav-target="contact" data-translate="contact">Contact</button>
+          </li>
+
+          <li class="navbar-item">
+            <button class="navbar-link language-switch" data-lang-switch>
+              <ion-icon name="language-outline"></ion-icon>
+            </button>
           </li>
 
         </ul>
@@ -211,17 +214,15 @@
       <article class="about active" data-page="about">
 
         <header>
-          <h2 class="h2 article-title">About me</h2>
+          <h2 class="h2 article-title" data-translate="aboutMe">About me</h2>
         </header>
 
         <section class="about-text">
-          <p>
+          <p data-translate="aboutMe_1">
             I am Mehdi Anvari, a passionate and experienced backend developer with approximately 5 years of professional experience. My journey in software development began with frontend technologies, including HTML, CSS, JavaScript, Tailwind and Bootstrap. These experiences laid a solid foundation for my technical skills and allowed me to build visually appealing and user-friendly interfaces.
-
           </p>
 
-          <p>
-            
+          <p data-translate="aboutMe_2">
             However, my interest naturally shifted towards backend development, where I found my true calling. Over the past few years, I have dedicated myself to mastering backend technologies and have been actively working with PHP, Laravel, and MySQL. My expertise includes designing efficient database architectures, developing scalable and secure web applications, and integrating complex systems to ensure seamless functionality.
             <br>
             <br>
@@ -236,7 +237,7 @@
 
         <section class="service">
 
-          <h3 class="h3 service-title">What i'm doing</h3>
+          <h3 class="h3 service-title" data-translate="whatImDoing">What i'm doing</h3>
 
           <ul class="service-list">
 
@@ -248,7 +249,7 @@
               </div>
 
               <div class="service-content-box">
-                <h4 class="h4 service-item-title">Web design</h4>
+                <h4 class="h4 service-item-title" data-translate="webDesign">Web design</h4>
 
                 <p class="service-item-text">
                   The most modern and high-quality design made at a professional level.
@@ -264,7 +265,7 @@
               </div>
 
               <div class="service-content-box">
-                <h4 class="h4 service-item-title">Web development</h4>
+                <h4 class="h4 service-item-title" data-translate="webDevelopment">Web development</h4>
 
                 <p class="service-item-text">
                   High-quality development of sites at the professional level.
@@ -280,7 +281,7 @@
               </div>
 
               <div class="service-content-box">
-                <h4 class="h4 service-item-title">Mobile apps</h4>
+                <h4 class="h4 service-item-title" data-translate="mobileApps">Mobile apps</h4>
 
                 <p class="service-item-text">
                   Professional development of applications for Android.
@@ -296,7 +297,7 @@
               </div>
 
               <div class="service-content-box">
-                <h4 class="h4 service-item-title">Photography</h4>
+                <h4 class="h4 service-item-title" data-translate="photography">Photography</h4>
 
                 <p class="service-item-text">
                   I make high-quality photos of any category at a professional level.
@@ -1136,21 +1137,21 @@
 
         <section class="contact-form">
 
-          <h3 class="h3 form-title">Contact Form</h3>
+          <h3 class="h3 form-title" data-translate="contactForm">Contact Form</h3>
 
           <form action="#" class="form" data-form onsubmit="return handleSubmit(event)">
 
             <div class="input-wrapper">
-              <input type="text" name="fullname" class="form-input" placeholder="Full name" required data-form-input>
+              <input type="text" name="fullname" class="form-input" data-translate-placeholder="fullName" placeholder="Full name" required data-form-input>
 
-              <input type="email" name="email" class="form-input" placeholder="Email address" required data-form-input>
+              <input type="email" name="email" class="form-input" data-translate-placeholder="emailAddress" placeholder="Email address" required data-form-input>
             </div>
 
-            <textarea name="message" class="form-input" placeholder="Your Message" required data-form-input></textarea>
+            <textarea name="message" class="form-input" data-translate-placeholder="yourMessage" placeholder="Your Message" required data-form-input></textarea>
 
             <button class="form-btn" type="submit" data-form-btn>
               <ion-icon name="paper-plane"></ion-icon>
-              <span>Send Message</span>
+              <span data-translate="sendMessage">Send Message</span>
             </button>
 
           </form>
