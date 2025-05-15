@@ -103,9 +103,10 @@
             </div>
 
             <div class="contact-info">
-              <p class="contact-title">Birthday</p>
+              <p class="contact-title">Age</p>
 
-              <time datetime="2006-03-23">Mar 23, 2006</time>
+              <time id="age" datetime="2006-03-23" id="birthday"></time>
+              <!-- <span id="age"></span> -->
             </div>
 
           </li>
@@ -1190,6 +1191,23 @@
       window.location.href = mailtoLink;
       return false;
     }
+
+    // Calculate and display age
+    function calculateAge() {
+      const birthDate = new Date('2006-03-23');
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      document.getElementById('age').textContent = `${age} years old`;
+    }
+
+    // Call the function when the page loads
+    calculateAge();
   </script>
   <!--
     - ionicon link
