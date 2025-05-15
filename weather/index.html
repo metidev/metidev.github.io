@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./style.css">
+    <title>🌡️ Weather Time</title>
+</head>
+<body>
+    <div class="info">
+        <h1>Minimalist Clock and Weather</h1>
+        <span>
+            Made with
+            <i class="fa fa-beer"></i>
+            by
+            <a href="https://github.com/metidev" target="_blank">Meti Dev</a>
+            <div class="spoilers">
+                Minimalist, Flat, Modern
+            </div>
+        </span>
+    </div>
+
+    <div class="app-wrap">
+        <div class="clock-face counter">
+            <div class="analog">
+                <span class="hours">00</span>:<span class="mins">00</span>
+            </div>
+
+            <div class="hours counter">
+                <span class="hands"></span>
+            </div>
+
+            <div class="minutes counter">
+                <span class="hands"></span>
+            </div>
+        </div>
+
+        <div class="weather">
+            <div class="locale-data">
+                <div class="city">Loading...</div>
+                <div class="cond">Loading...</div>
+                <div class="temp-block">
+                    <div class="temp">
+                        <span class="temp-value">--</span>
+                        <div class="degree">&#176;</div>
+                        <div class="temp">C</div>
+                    </div>
+                </div>
+            </div>
+            <div class="weather-icon"></div>
+        </div>
+    </div>
+
+    <script src="./weather.js"></script>
+</body>
+</html> 
