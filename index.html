@@ -251,7 +251,7 @@
               <div class="service-content-box">
                 <h4 class="h4 service-item-title" data-translate="webDesign">Web design</h4>
 
-                <p class="service-item-text">
+                <p class="service-item-text" data-translate="webDesignSub">
                   The most modern and high-quality design made at a professional level.
                 </p>
               </div>
@@ -267,7 +267,7 @@
               <div class="service-content-box">
                 <h4 class="h4 service-item-title" data-translate="webDevelopment">Web development</h4>
 
-                <p class="service-item-text">
+                <p class="service-item-text" data-translate="webDevelopmentSub">
                   High-quality development of sites at the professional level.
                 </p>
               </div>
@@ -283,7 +283,7 @@
               <div class="service-content-box">
                 <h4 class="h4 service-item-title" data-translate="mobileApps">Mobile apps</h4>
 
-                <p class="service-item-text">
+                <p class="service-item-text" data-translate="mobileAppsSub">
                   Professional development of applications for Android.
                 </p>
               </div>
@@ -299,7 +299,7 @@
               <div class="service-content-box">
                 <h4 class="h4 service-item-title" data-translate="photography">Photography</h4>
 
-                <p class="service-item-text">
+                <p class="service-item-text" data-translate="photographySub">
                   I make high-quality photos of any category at a professional level.
                 </p>
               </div>
@@ -522,7 +522,7 @@
       <article class="resume" data-page="resume">
 
         <header>
-          <h2 class="h2 article-title">Resume</h2>
+          <h2 class="h2 article-title" data-translate="resume">Resume</h2>
         </header>
 
         <section class="timeline">
@@ -532,18 +532,18 @@
               <ion-icon name="book-outline"></ion-icon>
             </div>
 
-            <h3 class="h3">Education</h3>
+            <h3 class="h3" data-translate="education">Education</h3>
           </div>
 
           <ol class="timeline-list">
 
             <li class="timeline-item">
 
-              <h4 class="h4 timeline-item-title">Shamsipour technical and Vocational College (STVC)</h4>
+              <h4 class="h4 timeline-item-title" data-translate="university">Shamsipour technical and Vocational College (STVC)</h4>
 
-              <span>2024 — Present</span>
+              <span data-translate="university_date">2024 — Present</span>
 
-              <p class="timeline-text">
+              <p class="timeline-text" data-translate="university_text">
                 I am studying software and acquiring more technical sciences in this field.
               </p>
 
@@ -552,13 +552,12 @@
 
             <li class="timeline-item">
 
-              <h4 class="h4 timeline-item-title">High school of Network and software</h4>
+              <h4 class="h4 timeline-item-title" data-translate="highSchool">High school of Network and software</h4>
 
-              <span>2021 — 2024</span>
+              <span data-translate="highSchool_date">2021 — 2024</span>
 
-              <p class="timeline-text">
+              <p class="timeline-text" data-translate="highSchool_text">
                 Gaining knowledge and experience in computer science and computer networks and doing several practical and internship projects.
-
               </p>
 
             </li>
@@ -574,7 +573,7 @@
               <ion-icon name="book-outline"></ion-icon>
             </div>
 
-            <h3 class="h3">Experience</h3>
+            <h3 class="h3" data-translate="experience">Experience</h3>
           </div>
 
           <ol class="timeline-list">
@@ -610,7 +609,7 @@
 
         <section class="skill">
 
-          <h3 class="h3 skills-title">My skills</h3>
+          <h3 class="h3 skills-title" data-translate="mySkills">My skills</h3>
 
           <ul class="skills-list content-card">
 
@@ -895,8 +894,8 @@
               </a>
             </li> -->
 
-            <!-- <li class="project-item  active" data-filter-item data-category="web development">
-              <a href="#">
+            <li class="project-item  active" data-filter-item data-category="web development">
+              <a href="./url-shorter/index.html" target="_blank">
 
                 <figure class="project-img">
                   <div class="project-item-icon-box">
@@ -906,12 +905,13 @@
                   <img src="./assets/images/project-9.png" alt="arrival" loading="lazy">
                 </figure>
 
-                <h3 class="project-title">Arrival</h3>
+                <h3 class="project-title">URL Shorter</h3>
 
                 <p class="project-category">Web development</p>
 
               </a>
-            </li> -->
+            </li>
+
 
           </ul>
 
@@ -1204,7 +1204,7 @@
         age--;
       }
       
-      document.getElementById('age').textContent = `${age} years old`;
+      document.getElementById('age').textContent = `${age}`;
     }
 
     // Call the function when the page loads

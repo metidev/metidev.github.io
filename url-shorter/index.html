@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link shortener</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Vazirmatn', sans-serif;
+      background: linear-gradient(135deg, #7e91df, #f07d7d, #dfbb6e);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      width: 100%;
+      max-width: 550px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(to right, #fff, #e0e0e0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+
+    .input-container {
+      display: flex;
+      align-items: center;
+      border-radius: 1rem;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .input-container:focus-within {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    a{
+      text-decoration: none;
+      color: #0080ff;
+      transition: all 0.3s ease;
+    }
+    a:hover{
+      transform: translateY(-1px);
+
+    }
+    input {
+      flex: 1;
+      padding: 1rem 1.2rem;
+      border: none;
+      background: transparent;
+      color: white;
+      font-size: 1.1rem;
+      font-family: 'Vazirmatn', sans-serif;
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    input:focus {
+      outline: none;
+    }
+
+    .paste-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      padding: 1.2rem 1.2rem;
+      cursor: pointer;
+      height: 100%;
+      font-size: 1.3rem;
+      transition: all 0.3s ease;
+    }
+
+    .paste-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .paste-btn i {
+      transition: transform 0.3s ease;
+    }
+
+    .paste-btn:hover i {
+      transform: scale(1.1);
+    }
+
+    .shorten-btn {
+      padding: 1rem 2rem;
+      border: none;
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 1.5rem;
+      font-family: 'Vazirmatn', sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shorten-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+
+    .shorten-btn:hover::before {
+      left: 100%;
+    }
+
+    .shorten-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .toast {
+      margin-top: 1rem;
+      padding: 1rem 1.5rem;
+      background-color: rgba(0, 0, 0, 0.8);
+      border-radius: 1rem;
+      display: none;
+      animation: slideIn 0.5s ease forwards;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .history {
+      margin-top: 2.5rem;
+      width: 100%;
+      text-align: left;
+    }
+
+    .history h3 {
+      margin-bottom: 1rem;
+      font-size: 1.4rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .history-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem 1.2rem;
+      border-radius: 1rem;
+      margin-bottom: 0.8rem;
+      word-wrap: break-word;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .history-item i {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.2rem;
+    }
+
+    .history-url {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .history-url a {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-original {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.95rem;
+    }
+
+    .history-original span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(5px);
+    }
+
+    .clear-history {
+      margin: 1.2rem 0 1.2rem;
+      background: rgba(255, 80, 80, 0.8);
+      border: none;
+      padding: 0.8rem 1.5rem;
+      color: white;
+      border-radius: 1rem;
+      cursor: pointer;
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .clear-history i {
+      font-size: 1.1rem;
+    }
+
+    .clear-history:hover {
+      background: rgba(255, 80, 80, 1);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 80, 80, 0.3);
+    }
+
+    .loader-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+    }
+
+    .spinner {
+      width: 100px;
+      height: 100px;
+      border: 8px solid rgba(255, 255, 255, 0.1);
+      border-top: 8px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 2rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      font-size: 1.4rem;
+      color: white;
+      font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 1.5rem;
+      }
+
+      h2 {
+        font-size: 1.8rem;
+      }
+
+      .input-container {
+        flex-direction: column;
+      }
+
+      .paste-btn {
+        width: 100%;
+        padding: 0.5rem;
+      }
+
+      .shorten-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="mainApp">
+    <h2>Link shortener</h2>
+    <div class="input-container">
+      <input type="url" id="urlInput" placeholder="Enter Your URL">
+      <button class="paste-btn" onclick="pasteClipboard()"><i class="fas fa-paste"></i></button>
+    </div>
+    <button class="shorten-btn" onclick="shortenURL()">short and copy</button>
+    <div id="toast" class="toast"></div>
+    <div class="history" id="history">
+      <h3>URL History</h3>
+      <button class="clear-history" onclick="clearHistory()"><i class="fas fa-trash-alt"></i> Clear All</button>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div class="loader-container" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text">Redirecting to the main URL...</div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'shortened_links';
+
+    function generateCode(length = 5) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    function getStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      const now = Date.now();
+
+      for (let code in parsed) {
+        if (now - parsed[code].createdAt > 259200000) {
+          delete parsed[code];
+        }
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      return parsed;
+    }
+
+    function saveToStorage(code, url) {
+      const data = getStorage();
+      data[code] = { url: url, createdAt: Date.now() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function shortenURL() {
+      const urlInput = document.getElementById('urlInput');
+      const originalUrl = urlInput.value.trim();
+      if (!originalUrl) {
+        showToast('Please enter a valid URL.');
+        return;
+      }
+
+      const code = generateCode();
+      const shortUrl = `${location.origin}${location.pathname}#/${code}`;
+      saveToStorage(code, originalUrl);
+      navigator.clipboard.writeText(shortUrl).then(() => {
+        showToast('URL copied: ' + shortUrl);
+        renderHistory();
+        urlInput.value = '';
+      });
+    }
+
+    function renderHistory() {
+      const data = getStorage();
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '';
+
+      Object.keys(data).reverse().forEach(code => {
+        const shortUrl = `${location.origin}${location.pathname}#/${code}`;
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+          <div class="history-url">
+            <i class="fas fa-link"></i>
+            <a href="${shortUrl}" target="_blank" title="${shortUrl}">${shortUrl}</a>
+          </div>
+          <div class="history-original">
+            <i class="fas fa-arrow-right"></i>
+            <span title="${data[code].url}">${data[code].url}</span>
+          </div>
+        `;
+        historyList.appendChild(div);
+      });
+    }
+
+    function handleRedirect() {
+      const hash = location.hash.replace('#/', '');
+      if (hash) {
+        const data = getStorage();
+        if (data[hash]) {
+          document.getElementById('mainApp').style.display = 'none';
+          document.getElementById('loader').style.display = 'flex';
+          setTimeout(() => {
+            location.href = data[hash].url;
+          }, 2000);
+        } else {
+          document.body.innerHTML = '<h2 style="color:white;text-align:center;">The URL is expired or does not exist.</h2>';
+        }
+      } else {
+        renderHistory();
+      }
+    }
+
+    function pasteClipboard() {
+      navigator.clipboard.readText().then(text => {
+        document.getElementById('urlInput').value = text;
+      });
+    }
+
+    function clearHistory() {
+      localStorage.removeItem(STORAGE_KEY);
+      renderHistory();
+      showToast('History deleted.');
+    }
+
+    window.addEventListener('DOMContentLoaded', handleRedirect);
+  </script>
+</body>
+</html>
