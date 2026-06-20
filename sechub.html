@@ -471,17 +471,31 @@
                 peerInstance.destroy();
             }
 
-            // STUN server configurations used for traversing NAT/Firewalls across independent networks
+            // STUN & TURN server configurations for traversing strict NAT/Firewalls across independent networks
             const peerConfig = {
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' }
+                        // Free Public TURN server for Symmetric NAT traversal fallback
+                        {
+                            urls: "turn:openrelay.metered.ca:80",
+                            username: "openrelayproject",
+                            credential: "openrelayproject"
+                        },
+                        {
+                            urls: "turn:openrelay.metered.ca:443",
+                            username: "openrelayproject",
+                            credential: "openrelayproject"
+                        },
+                        {
+                            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                            username: "openrelayproject",
+                            credential: "openrelayproject"
+                        }
                     ]
-                }
+                },
+                debug: 2
             };
 
             if (currentRole === 'A') {
@@ -506,10 +520,8 @@
                     logToTerminal(`Beta Node instantiated. Connector ID: ${id}`, "success");
                     logToTerminal(`Broadcasting handshake request to target Host: ${peerIdAlpha}`, "sys");
                     
-                    // Attempting WebRTC socket connection with direct routing
-                    p2pConnection = peerInstance.connect(peerIdAlpha, {
-                        reliable: true
-                    });
+                    // Attempting WebRTC socket connection
+                    p2pConnection = peerInstance.connect(peerIdAlpha);
                     setupDataChannelEvents();
                 });
             }
@@ -554,6 +566,10 @@
                 logToTerminal("Remote peer terminated connection link.", "error");
                 playBleep('error');
                 resetConnectionUI();
+            });
+
+            p2pConnection.on('error', (err) => {
+                logToTerminal(`Data channel network error: ${err}`, "error");
             });
         }
 
