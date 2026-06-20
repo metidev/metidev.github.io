@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST-LINK // ارتباط فوق امن سایبری</title>
+    <!-- استفاده از Tailwind CSS برای طراحی بهینه و سریع -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- کتابخانه PeerJS جهت مدیریت هندشیک و سیگنالینگ WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <!-- فونت مونو اسپیس مناسب تم‌های هکری و لینوکسی -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            background-color: #050505;
+            color: #00ff66;
+            text-shadow: 0 0 5px rgba(0, 255, 102, 0.4);
+        }
+        /* افکت اسکن لاین‌های مانیتورهای CRT قدیمی */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        /* کاستوم اسکرول ترمینال */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ff66;
+            border-radius: 3px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .ping-glow {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="relative h-screen overflow-hidden flex flex-col justify-between">
+
+    <!-- لایه خطوط اسکن تصویر برای حس ترمینال هک -->
+    <div class="scanlines"></div>
+
+    <!-- پس‌زمینه بارانی کدهای ماتریکس -->
+    <canvas id="matrixBg" class="absolute top-0 left-0 w-full h-full -z-10 opacity-15 pointer-events-none"></canvas>
+
+    <!-- هدر ترمینال -->
+    <header class="flex-shrink-0 border-b border-[#00ff66]/30 bg-black/80 backdrop-blur-md p-3 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-[#00ff66] ping-glow shadow-[0_0_8px_#00ff66]"></div>
+                <h1 class="text-lg font-bold tracking-widest text-[#00ff66] flex items-center gap-2">
+                    <span>GHOST-LINK</span> 
+                    <span class="text-xs px-2 py-0.5 bg-[#00ff66]/10 border border-[#00ff66]/40 rounded text-cyan-400">v3.0_STUN</span>
+                </h1>
+            </div>
+            <div class="text-[11px] text-[#00ff66]/70 font-mono text-center">
+                [پروتکل: WebRTC Direct + AES-GCM-256] | [امنیت: <span class="text-emerald-400">فعال</span>]
+            </div>
+        </div>
+    </header>
+
+    <!-- پنل اصلی برنامه - قفل کردن کل باکس در دسکتاپ به اندازه حداکثر قد مانیتور -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4 items-stretch overflow-hidden z-10">
+        
+        <!-- ستون سمت چپ: تنظیمات و مانیتورینگ ترمینال -->
+        <div class="w-full md:w-5/12 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- فرم راه‌اندازی ارتباط -->
+            <div class="flex-shrink-0 border border-[#00ff66]/30 bg-black/95 p-4 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col gap-3">
+                <div class="text-xs font-bold border-b border-[#00ff66]/20 pb-1.5 text-cyan-400 flex justify-between">
+                    <span>⚡ پیکربندی هسته ارتباطی</span>
+                    <span class="text-[9px] text-gray-500">P2P_BYPASS_NAT</span>
+                </div>
+
+                <!-- کلید رمزنگاری محرمانه -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] text-[#00ff66]/80 flex justify-between">
+                        <span>پسورد رمزنگاری (E2EE Key):</span>
+                        <span class="text-red-500 font-bold">* محرمانه *</span>
+                    </label>
+                    <input type="password" id="sharedSecret" placeholder="پسورد رمزنگاری پیام‌ها..." 
+                        class="w-full bg-[#0d0d0d] border border-[#00ff66]/40 rounded px-2 py-1.5 text-xs text-cyan-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans text-center">
+                </div>
+
+                <!-- شناسه اتاق ارتباطی -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] text-[#00ff66]/80">کد اختصاصی کانال (Room Code):</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="roomCode" placeholder="مثال: dark-tunnel-99" 
+                            class="flex-grow bg-[#0d0d0d] border border-[#00ff66]/40 rounded px-2 py-1.5 text-xs text-[#00ff66] focus:outline-none focus:border-[#00ff66] focus:ring-1 focus:ring-[#00ff66] transition-all text-center">
+                        <button onclick="generateRandomCode()" class="bg-[#00ff66]/10 border border-[#00ff66]/60 hover:bg-[#00ff66]/30 text-[11px] px-2.5 rounded transition-all text-[#00ff66] active:scale-95">تصادفی</button>
+                    </div>
+                </div>
+
+                <!-- انتخاب نقش میزبان/میهمان -->
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                    <button onclick="setNodeRole('A')" id="btnRoleA" class="border border-cyan-500/50 bg-cyan-950/20 text-cyan-400 py-1.5 px-2 rounded text-[11px] transition-all hover:bg-cyan-500/10 active:scale-95 flex flex-col items-center">
+                        <span class="font-bold">نود آلفا (Alpha)</span>
+                        <span class="text-[9px] opacity-70">میزبان تونل</span>
+                    </button>
+                    <button onclick="setNodeRole('B')" id="btnRoleB" class="border border-gray-700 bg-black text-gray-500 py-1.5 px-2 rounded text-[11px] transition-all hover:bg-white/5 active:scale-95 flex flex-col items-center">
+                        <span class="font-bold">نود بتا (Beta)</span>
+                        <span class="text-[9px] opacity-70">متصل شونده</span>
+                    </button>
+                </div>
+
+                <!-- دکمه شروع ارتباط -->
+                <button onclick="initializeWebRTC()" id="connectBtn" class="w-full bg-[#00ff66]/20 border-2 border-[#00ff66] hover:bg-[#00ff66]/40 py-2 rounded font-bold text-xs tracking-wider text-[#00ff66] transition-all hover:shadow-[0_0_15px_#00ff66] active:scale-98 mt-1 flex justify-center items-center gap-2">
+                    <span id="btnStatusText">📡 راه‌اندازی کانال و گوش‌بزنگ</span>
+                </button>
+            </div>
+
+            <!-- ترمینال مانیتورینگ وقایع سیستم -->
+            <div class="flex-grow border border-[#00ff66]/30 bg-black/95 p-3 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden min-h-[150px]">
+                <div class="text-[11px] font-bold border-b border-[#00ff66]/20 pb-1.5 text-[#00ff66] flex justify-between items-center">
+                    <span>📟 مانیتورینگ لاگ سیستم (LOGS)</span>
+                    <button onclick="clearLogs()" class="text-[9px] text-gray-500 hover:text-red-400">[WIPE]</button>
+                </div>
+                <!-- اسکرول مجزا برای ترمینال لاگ -->
+                <div id="terminalLogs" class="flex-grow overflow-y-auto font-mono text-[10px] leading-5 text-[#00ff66]/85 mt-2 space-y-1">
+                    <div class="text-gray-500">[SYSTEM] در انتظار مقداردهی اولیه...</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ستون سمت راست: محیط امن و تاریک چت -->
+        <div class="flex-grow md:w-7/12 border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden h-full">
+            
+            <!-- هدر چت باکس -->
+            <div class="flex-shrink-0 border-b border-[#00ff66]/20 p-3 bg-[#0d0d0d] flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div id="chatStatusIndicator" class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]"></div>
+                    <span id="chatStatusText" class="text-xs font-bold tracking-wide text-red-500">آفلاین</span>
+                </div>
+                <div class="text-[10px] text-cyan-400 bg-cyan-950/30 border border-cyan-800/50 px-2.5 py-1 rounded">
+                    وضعیت رمزارز: <span id="keyStatus" class="font-bold text-red-500">تولید نشده</span>
+                </div>
+            </div>
+
+            <!-- بدنه اصلی پیام‌ها (این بخش اسکرول مستقل می‌خورد) -->
+            <div id="chatMessages" class="flex-grow overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
+                <!-- پیام راهنمای امنیتی اولیه -->
+                <div class="border border-[#00ff66]/10 bg-[#00ff66]/5 rounded p-3 text-center max-w-lg mx-auto flex-shrink-0">
+                    <p class="text-xs text-amber-500 font-bold mb-1">🛡️ پروتکل امنیتی سایبری GHOST-LINK 🛡️</p>
+                    <p class="text-[10px] text-gray-400 leading-normal">
+                        برای برقراری اتصال موفقیت‌آمیز بین دو دستگاهِ مختلف، حتما از فیلترشکن استفاده نکنید یا مطمئن شوید فیلترشکن شما پورت‌های شبکه را بلاک نکرده باشد. ترافیک شما تحت استانداردهای AES-GCM رمزگذاری خواهد شد.
+                    </p>
+                </div>
+            </div>
+
+            <!-- بخش ورود متن پیام (ثابت در انتهای کادر) -->
+            <div class="flex-shrink-0 border-t border-[#00ff66]/20 p-3 bg-[#0a0a0a] flex items-center gap-2">
+                <input type="text" id="messageInput" disabled placeholder="در انتظار متصل شدن همتا..." 
+                    class="flex-grow bg-[#050505] border border-[#00ff66]/30 rounded p-2.5 text-xs text-[#00ff66] placeholder-gray-600 focus:outline-none focus:border-[#00ff66] focus:ring-1 focus:ring-[#00ff66] transition-all font-sans"
+                    onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()" id="sendBtn" disabled class="bg-[#00ff66]/10 border border-[#00ff66]/60 hover:bg-[#00ff66]/30 px-4 py-2.5 rounded text-xs text-[#00ff66] font-bold transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-95">
+                    ارسال
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- پاورقی فوتر -->
+    <footer class="flex-shrink-0 border-t border-[#00ff66]/20 bg-black/90 p-2 text-center text-[9px] text-gray-500 z-10">
+        <div>🔒 رمزنگاری سرتاسری غیرمتمرکز (End-to-End Encrypted) - هیچ دیتایی روی سرورها ذخیره نمی‌شود</div>
+    </footer>
+
+    <!-- کدهای برنامه‌نویسی و منطق رمزارز و WebRTC -->
+    <script>
+        // --- متغیرهای سیستمی ---
+        let currentRole = 'A'; 
+        let peerInstance = null;
+        let p2pConnection = null;
+        let derivedAesKey = null; 
+        const systemAppId = typeof __app_id !== 'undefined' ? __app_id : 'ghost-link-p2p';
+
+        // --- سنتز صدای بوق ترمینال هکرها ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playBleep(type) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                if (type === 'type') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                } else if (type === 'success') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(550, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                }
+            } catch (e) {
+                // نادیده گرفتن خطای صوتی به دلیل پالیسی مرورگرها
+            }
+        }
+
+        // --- انیمیشن باران ماتریکس ---
+        const canvas = document.getElementById('matrixBg');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789XOXO#@$%";
+        const fontSize = 12;
+        const columns = width / fontSize;
+        const rainDrops = [];
+
+        for (let x = 0; x < columns; x++) {
+            rainDrops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#00ff66';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+                if (rainDrops[i] * fontSize > height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 35);
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // --- توابع عمومی اینترفیس کاربر ---
+
+        // ساختن تصادفی آی دی کانال برای ارتباط هماهنگ
+        function generateRandomCode() {
+            const adjectives = ["shadow", "cyber", "ghost", "dark", "matrix", "silent", "phantom", "quantum"];
+            const nouns = ["tunnel", "node", "nexus", "bridge", "vault", "socket", "daemon", "network"];
+            const randomNum = Math.floor(100 + Math.random() * 900);
+            
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const noun = nouns[Math.floor(Math.random() * nouns.length)];
+            
+            document.getElementById('roomCode').value = `${adj}-${noun}-${randomNum}`;
+            playBleep('type');
+        }
+
+        // جابجایی نقش بین هاست و متصل‌شونده
+        function setNodeRole(role) {
+            currentRole = role;
+            const btnA = document.getElementById('btnRoleA');
+            const btnB = document.getElementById('btnRoleB');
+            const connectBtnText = document.getElementById('btnStatusText');
+
+            if (role === 'A') {
+                btnA.className = "border border-cyan-500/50 bg-cyan-950/20 text-cyan-400 py-1.5 px-2 rounded text-[11px] transition-all hover:bg-cyan-500/10 active:scale-95 flex flex-col items-center";
+                btnB.className = "border border-gray-700 bg-black text-gray-500 py-1.5 px-2 rounded text-[11px] transition-all hover:bg-white/5 active:scale-95 flex flex-col items-center";
+                connectBtnText.innerText = "📡 راه‌اندازی کانال و گوش‌بزنگ";
+            } else {
+                btnB.className = "border border-[#00ff66]/50 bg-[#00ff66]/10 text-[#00ff66] py-1.5 px-2 rounded text-[11px] transition-all hover:bg-[#00ff66]/10 active:scale-95 flex flex-col items-center shadow-[0_0_10px_rgba(0,255,102,0.15)]";
+                btnA.className = "border border-gray-700 bg-black text-gray-500 py-1.5 px-2 rounded text-[11px] transition-all hover:bg-white/5 active:scale-95 flex flex-col items-center";
+                connectBtnText.innerText = "🔌 اتصال امن به تونل میزبان";
+            }
+            playBleep('type');
+        }
+
+        // نوشتن وقایع در مانیتور لاگ‌ها
+        function logToTerminal(message, type = 'info') {
+            const logsDiv = document.getElementById('terminalLogs');
+            const logEntry = document.createElement('div');
+            
+            let colorClass = 'text-[#00ff66]/80';
+            let prefix = '[INFO]';
+            
+            if (type === 'success') {
+                colorClass = 'text-cyan-400 font-bold';
+                prefix = '[OK]';
+            } else if (type === 'error') {
+                colorClass = 'text-red-500 font-bold';
+                prefix = '[ERR]';
+            } else if (type === 'warning') {
+                colorClass = 'text-amber-500';
+                prefix = '[WARN]';
+            } else if (type === 'sys') {
+                colorClass = 'text-purple-400';
+                prefix = '[SYS]';
+            }
+
+            const now = new Date().toLocaleTimeString();
+            logEntry.className = `${colorClass} text-[10px] font-mono`;
+            logEntry.innerHTML = `<span class="text-gray-600">[${now}]</span> ${prefix} ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('terminalLogs').innerHTML = '<div class="text-gray-500">[SYSTEM] وقایع مانیتور با موفقیت پاک شدند.</div>';
+            playBleep('type');
+        }
+
+        // --- لایه امنیت: رمزنگاری نامتقارن AES-GCM-256 محلی ---
+
+        async function deriveKeyFromSecret(password) {
+            logToTerminal("در حال تولید و اشتقاق کلید رمزنگاری...", "sys");
+            const enc = new TextEncoder();
+            
+            const rawKeyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                "PBKDF2",
+                false,
+                ["deriveKey"]
+            );
+
+            // نمک ثابت سیستم برای جفت‌سازی ساده و سینک کلید‌ها بدون تبادل کلید
+            const salt = enc.encode("GHOST_LINK_STATIC_P2P_SALT_2026");
+
+            // تولید کلید سخت با فرکانس تکرار ۱۰۰ هزار باره جهت مهار حملات دیکشنری
+            const key = await window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                rawKeyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+
+            logToTerminal("کلید رمزنگاری ۲۵۶ بیتی با موفقیت صادر شد.", "success");
+            return key;
+        }
+
+        // پکیج کردن و قفل اطلاعات
+        async function encryptMessage(text, key) {
+            const enc = new TextEncoder();
+            const iv = window.crypto.getRandomValues(new Uint8Array(12)); // مقدار تصادفی IV مستقل
+            
+            const ciphertext = await window.crypto.subtle.encrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                enc.encode(text)
+            );
+
+            const result = new Uint8Array(iv.length + ciphertext.byteLength);
+            result.set(iv, 0);
+            result.set(new Uint8Array(ciphertext), iv.length);
+
+            return btoa(String.fromCharCode.apply(null, result));
+        }
+
+        // دکریپت و باز کردن قفل اطلاعات
+        async function decryptMessage(base64Data, key) {
+            try {
+                const dec = new TextDecoder();
+                const binaryString = atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                const iv = bytes.slice(0, 12);
+                const ciphertext = bytes.slice(12);
+
+                const decryptedBuffer = await window.crypto.subtle.decrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: iv
+                    },
+                    key,
+                    ciphertext
+                );
+
+                return dec.decode(decryptedBuffer);
+            } catch (err) {
+                logToTerminal("خطا در رمزگشایی فریم اطلاعات!", "error");
+                throw new Error("دکریپشن ناموفق.");
+            }
+        }
+
+        // --- بخش وب‌آرتی‌سی WebRTC (حل مشکل اتصال بین دو شبکه مجزا با استفاده از سرورهای گوگل) ---
+
+        async function initializeWebRTC() {
+            const sharedSecret = document.getElementById('sharedSecret').value.trim();
+            const roomCode = document.getElementById('roomCode').value.trim();
+
+            if (!sharedSecret) {
+                logToTerminal("پسورد رمزنگاری نباید خالی باشد!", "error");
+                playBleep('error');
+                return;
+            }
+            if (!roomCode) {
+                logToTerminal("شناسه یا کد کانال نامعتبر است!", "error");
+                playBleep('error');
+                return;
+            }
+
+            try {
+                derivedAesKey = await deriveKeyFromSecret(sharedSecret);
+                document.getElementById('keyStatus').innerText = "ایمن و فعال";
+                document.getElementById('keyStatus').className = "font-bold text-[#00ff66]";
+            } catch (e) {
+                logToTerminal("موتور امنیتی مرورگر با خطا متوقف شد!", "error");
+                playBleep('error');
+                return;
+            }
+
+            logToTerminal("در حال برقراری کانال سیگنالینگ...", "sys");
+
+            const peerIdAlpha = `ghostlink-${roomCode}-alpha`;
+            const peerIdBeta = `ghostlink-${roomCode}-beta`;
+
+            if (peerInstance) {
+                peerInstance.destroy();
+            }
+
+            // پیکربندی حاوی سرورهای STUN گوگل برای دور زدن فایروال و اتصال قطعی دو دستگاه جداگانه
+            const peerConfig = {
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' },
+                        { urls: 'stun:stun4.l.google.com:19302' }
+                    ]
+                }
+            };
+
+            if (currentRole === 'A') {
+                peerInstance = new Peer(peerIdAlpha, peerConfig);
+                
+                peerInstance.on('open', (id) => {
+                    logToTerminal(`میزبان آماده کار شد. شناسه شما: ${id}`, "success");
+                    logToTerminal("منتظر دریافت درخواست هندشیک نود بتا...", "warning");
+                    updateButtonState("waiting");
+                });
+
+                peerInstance.on('connection', (conn) => {
+                    logToTerminal("درخواست اتصال همتا دریافت شد. تلاش برای باز کردن سوکت...", "success");
+                    p2pConnection = conn;
+                    setupDataChannelEvents();
+                });
+
+            } else {
+                peerInstance = new Peer(peerIdBeta, peerConfig);
+
+                peerInstance.on('open', (id) => {
+                    logToTerminal(`بخش کلاینت آغاز به کار کرد. شناسه: ${id}`, "success");
+                    logToTerminal(`ارسال پکت سینک به آدرس مقصد: ${peerIdAlpha}`, "sys");
+                    
+                    // تلاش برای متصل شدن به هاست با فعال‌سازی ارتباط پایدار
+                    p2pConnection = peerInstance.connect(peerIdAlpha, {
+                        reliable: true
+                    });
+                    setupDataChannelEvents();
+                });
+            }
+
+            peerInstance.on('error', (err) => {
+                logToTerminal(`خطای پورت سیگنال: ${err.type}`, "error");
+                if (err.type === 'peer-unavailable' && currentRole === 'B') {
+                    logToTerminal("نود میزبان آنلاین یافت نشد. مطمئن شوید میزبان اول دکمه را زده باشد.", "warning");
+                }
+                playBleep('error');
+                resetConnectionUI();
+            });
+        }
+
+        function setupDataChannelEvents() {
+            p2pConnection.on('open', () => {
+                logToTerminal("تونل رمزگذاری شده WebRTC به طور مستقیم برقرار شد!", "success");
+                playBleep('success');
+                
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('messageInput').placeholder = "پیام بنویسید...";
+                document.getElementById('sendBtn').disabled = false;
+                
+                document.getElementById('chatStatusIndicator').className = "w-2.5 h-2.5 rounded-full bg-[#00ff66] shadow-[0_0_8px_#00ff66] ping-glow";
+                document.getElementById('chatStatusText').innerText = "ارتباط فعال و امن";
+                document.getElementById('chatStatusText').className = "text-xs font-bold tracking-wide text-[#00ff66]";
+
+                updateButtonState("connected");
+            });
+
+            p2pConnection.on('data', async (data) => {
+                logToTerminal(`فریم داده کدگذاری شده دریافت شد (${data.length} کاراکتر)`, "sys");
+                try {
+                    const decryptedText = await decryptMessage(data, derivedAesKey);
+                    displayMessage(decryptedText, 'received');
+                } catch (e) {
+                    displayMessage("🔴 رمزگشایی ناموفق بود! پسوردها همخوانی ندارند.", "received-corrupted");
+                }
+            });
+
+            p2pConnection.on('close', () => {
+                logToTerminal("ارتباط توسط طرف مقابل خاتمه یافت.", "error");
+                playBleep('error');
+                resetConnectionUI();
+            });
+        }
+
+        // ارسال پیام جدید بعد از انکریپت محلی
+        async function sendMessage() {
+            const inputElement = document.getElementById('messageInput');
+            const messageText = inputElement.value.trim();
+
+            if (!messageText) return;
+
+            if (!p2pConnection || !derivedAesKey) {
+                logToTerminal("سوکت فاقد وضعیت فعال جهت انتقال اطلاعات است.", "error");
+                return;
+            }
+
+            try {
+                const encryptedPayload = await encryptMessage(messageText, derivedAesKey);
+                p2pConnection.send(encryptedPayload);
+                
+                logToTerminal(`اطلاعات با متد AES ایمن و به طرف مقابل خروجی داده شد.`, "success");
+                
+                displayMessage(messageText, 'sent');
+                inputElement.value = '';
+                playBleep('type');
+            } catch (err) {
+                logToTerminal("شکست در پکیج کردن محموله چت!", "error");
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // ثبت حباب پیام داخل کادر چت
+        function displayMessage(text, direction) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex ${direction === 'sent' ? 'justify-end' : 'justify-start'} mb-2 flex-shrink-0`;
+
+            const bubble = document.createElement('div');
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (direction === 'sent') {
+                bubble.className = "max-w-[85%] border border-cyan-500/40 bg-cyan-950/20 text-cyan-300 p-2.5 rounded-lg rounded-tr-none text-xs leading-relaxed";
+                bubble.innerHTML = `
+                    <div class="font-bold text-[9px] text-cyan-400 mb-1">شما [نود محلی]</div>
+                    <p class="font-sans break-words">${escapeHTML(text)}</p>
+                    <div class="text-[8px] text-cyan-500/80 text-left mt-1">${timeStr}</div>
+                `;
+            } else if (direction === 'received') {
+                bubble.className = "max-w-[85%] border border-[#00ff66]/40 bg-black text-[#00ff66] p-2.5 rounded-lg rounded-tl-none text-xs leading-relaxed shadow-[0_0_8px_rgba(0,255,102,0.05)]";
+                bubble.innerHTML = `
+                    <div class="font-bold text-[9px] text-[#00ff66]/80 mb-1">همتا [نود خارجی]</div>
+                    <p class="font-sans break-words">${escapeHTML(text)}</p>
+                    <div class="text-[8px] text-emerald-600/80 text-right mt-1">${timeStr}</div>
+                `;
+            } else if (direction === 'received-corrupted') {
+                bubble.className = "max-w-[85%] border border-red-500/40 bg-red-950/10 text-red-400 p-2.5 rounded-lg rounded-tl-none text-xs leading-relaxed";
+                bubble.innerHTML = `<p class="font-mono text-[10px]">${text}</p>`;
+            }
+
+            messageWrapper.appendChild(bubble);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // تغییر استایل دکمه اتصال در زمان‌های مختلف
+        function updateButtonState(state) {
+            const btn = document.getElementById('connectBtn');
+            if (state === 'waiting') {
+                btn.className = "w-full bg-amber-500/10 border-2 border-amber-500 hover:bg-amber-500/20 py-2 rounded font-bold text-xs text-amber-500 transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-98 mt-1 flex justify-center items-center gap-2";
+                btn.innerHTML = `
+                    <svg class="animate-spin h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>در انتظار جفت‌سازی... (گوش‌بزنگ پکت)</span>
+                `;
+            } else if (state === 'connected') {
+                btn.className = "w-full bg-cyan-500/20 border-2 border-cyan-500 py-2 rounded font-bold text-xs text-cyan-400 mt-1 flex justify-center items-center";
+                btn.innerHTML = `✔️ اتصال همتا ایمن شد`;
+            }
+        }
+
+        // برگرداندن UI چت به حالت اولیه زمان قطعی ارتباط
+        function resetConnectionUI() {
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('messageInput').placeholder = "در انتظار متصل شدن همتا...";
+            document.getElementById('sendBtn').disabled = true;
+            
+            document.getElementById('chatStatusIndicator').className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]";
+            document.getElementById('chatStatusText').innerText = "آفلاین";
+            document.getElementById('chatStatusText').className = "text-xs font-bold tracking-wide text-red-500";
+
+            const btn = document.getElementById('connectBtn');
+            btn.className = "w-full bg-[#00ff66]/20 border-2 border-[#00ff66] hover:bg-[#00ff66]/40 py-2 rounded font-bold text-xs tracking-wider text-[#00ff66] transition-all hover:shadow-[0_0_15px_#00ff66] active:scale-98 mt-1 flex justify-center items-center gap-2";
+            btn.innerText = currentRole === 'A' ? "📡 راه‌اندازی کانال و گوش‌بزنگ" : "🔌 اتصال امن به تونل میزبان";
+        }
+
+    </script>
+</body>
+</html>
