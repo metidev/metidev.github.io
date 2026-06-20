@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,14 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc };
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc };
     </script>
 
     <style>
@@ -24,23 +25,60 @@
             color: #00ff66;
             text-shadow: 0 0 5px rgba(0, 255, 102, 0.4);
         }
+
         .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             background-size: 100% 4px, 6px 100%;
-            z-index: 999; pointer-events: none; opacity: 0.8;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.8;
         }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0d0d0d; }
-        ::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
-        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-        .ping-glow { animation: pulse 1.5s infinite; }
-        
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff66;
+            border-radius: 3px;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .ping-glow {
+            animation: pulse 1.5s infinite;
+        }
+
         /* Modal Overlay */
-        #requestModal { display: none; }
-        #requestModal.active { display: flex; }
+        #requestModal {
+            display: none;
+        }
+
+        #requestModal.active {
+            display: flex;
+        }
     </style>
 </head>
+
 <body class="relative h-screen overflow-hidden flex flex-col justify-between">
     <div class="scanlines"></div>
     <canvas id="matrixBg" class="absolute top-0 left-0 w-full h-full -z-10 opacity-15 pointer-events-none"></canvas>
@@ -51,82 +89,103 @@
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full bg-[#00ff66] ping-glow shadow-[0_0_8px_#00ff66]"></div>
                 <h1 class="text-lg font-bold tracking-widest text-[#00ff66] flex items-center gap-2">
-                    <span>GHOST-LINK</span> 
-                    <span class="text-[10px] px-2 py-0.5 bg-cyan-900/40 border border-cyan-500/40 rounded text-cyan-400">ECDH_NET_v4</span>
+                    <span>GHOST-LINK</span>
+                    <span
+                        class="text-[10px] px-2 py-0.5 bg-cyan-900/40 border border-cyan-500/40 rounded text-cyan-400">ECDH_NET_v4</span>
                 </h1>
             </div>
             <div class="text-[10px] text-gray-400 font-mono text-center flex gap-4">
                 <span>LOCAL ID: <span id="headerLocalId" class="text-[#00ff66]">INITIALIZING...</span></span>
-                <span>STATUS: <span id="headerStatus" class="text-amber-400">CONNECTING TO GRID</span></span>
+                <span>STATUS: <span id="headerStatus" class="text-amber-400">CONNECTING TO
+                        GRID</span></span>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow max-w-6xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4 items-stretch overflow-hidden z-10">
-        
+    <main
+        class="flex-grow max-w-6xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4 items-stretch overflow-hidden z-10">
+
         <!-- Left Column: Global Network & Terminal -->
         <div class="w-full md:w-4/12 flex flex-col gap-4 h-full overflow-hidden">
-            
+
             <!-- Global Node Grid (Firestore Presence) -->
-            <div class="flex-grow border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden">
-                <div class="text-xs font-bold border-b border-[#00ff66]/20 p-3 bg-[#0d0d0d] text-cyan-400 flex justify-between">
+            <div
+                class="flex-grow border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden">
+                <div
+                    class="text-xs font-bold border-b border-[#00ff66]/20 p-3 bg-[#0d0d0d] text-cyan-400 flex justify-between">
                     <span>🌐 GLOBAL NETWORK NODES</span>
                     <span id="onlineCount" class="text-[10px] text-gray-500">0 ONLINE</span>
                 </div>
                 <div id="nodeList" class="flex-grow overflow-y-auto p-2 space-y-2">
-                    <div class="text-center text-xs text-gray-600 mt-4">Scanning frequencies for active nodes...</div>
+                    <div class="text-center text-xs text-gray-600 mt-4">Scanning
+                        frequencies for active nodes...</div>
                 </div>
             </div>
 
             <!-- Terminal Logs -->
-            <div class="h-48 flex-shrink-0 border border-[#00ff66]/30 bg-black/95 p-3 rounded-lg flex flex-col overflow-hidden">
-                <div class="text-[10px] font-bold border-b border-[#00ff66]/20 pb-1.5 text-[#00ff66] flex justify-between items-center">
+            <div
+                class="h-48 flex-shrink-0 border border-[#00ff66]/30 bg-black/95 p-3 rounded-lg flex flex-col overflow-hidden">
+                <div
+                    class="text-[10px] font-bold border-b border-[#00ff66]/20 pb-1.5 text-[#00ff66] flex justify-between items-center">
                     <span>📟 SYSTEM CONSOLE</span>
                     <button onclick="clearLogs()" class="text-[9px] text-gray-500 hover:text-red-400">[WIPE]</button>
                 </div>
-                <div id="terminalLogs" class="flex-grow overflow-y-auto font-mono text-[9px] leading-relaxed text-[#00ff66]/80 mt-2 space-y-1">
-                    <div class="text-gray-500">[SYSTEM] Booting encryption engine...</div>
+                <div id="terminalLogs"
+                    class="flex-grow overflow-y-auto font-mono text-[9px] leading-relaxed text-[#00ff66]/80 mt-2 space-y-1">
+                    <div class="text-gray-500">[SYSTEM] Booting encryption
+                        engine...</div>
                 </div>
             </div>
 
         </div>
 
         <!-- Right Column: Secure Chat Engine -->
-        <div class="flex-grow md:w-8/12 border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden h-full">
-            
+        <div
+            class="flex-grow md:w-8/12 border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden h-full">
+
             <!-- Target Status Header -->
             <div class="flex-shrink-0 border-b border-[#00ff66]/20 p-3 bg-[#0d0d0d] flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <div id="chatStatusIndicator" class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]"></div>
-                    <span id="chatStatusText" class="text-xs font-bold tracking-wide text-red-500">NO ACTIVE UPLINK</span>
+                    <div id="chatStatusIndicator" class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]">
+                    </div>
+                    <span id="chatStatusText" class="text-xs font-bold tracking-wide text-red-500">NO
+                        ACTIVE UPLINK</span>
                 </div>
                 <div class="flex gap-2">
-                    <div id="cryptoBadge" class="hidden text-[9px] text-cyan-400 bg-cyan-950/30 border border-cyan-800/50 px-2 py-1 rounded items-center gap-1">
+                    <div id="cryptoBadge"
+                        class="hidden text-[9px] text-cyan-400 bg-cyan-950/30 border border-cyan-800/50 px-2 py-1 rounded items-center gap-1">
                         🔒 ECDH+AES-GCM
                     </div>
-                    <button onclick="terminateConnection()" id="disconnectBtn" class="hidden text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-2 py-1 rounded transition-all">TERMINATE</button>
+                    <button onclick="terminateConnection()" id="disconnectBtn"
+                        class="hidden text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-2 py-1 rounded transition-all">TERMINATE</button>
                 </div>
             </div>
 
             <!-- Chat Window -->
             <div id="chatMessages" class="flex-grow overflow-y-auto p-4 space-y-3 flex flex-col justify-start relative">
                 <!-- Initial Briefing -->
-                <div id="chatBriefing" class="border border-[#00ff66]/10 bg-[#00ff66]/5 rounded p-3 text-center max-w-lg mx-auto mt-10">
-                    <p class="text-xs text-amber-500 font-bold mb-2">⚡ ZERO-KNOWLEDGE ARCHITECTURE ⚡</p>
+                <div id="chatBriefing"
+                    class="border border-[#00ff66]/10 bg-[#00ff66]/5 rounded p-3 text-center max-w-lg mx-auto mt-10">
+                    <p class="text-xs text-amber-500 font-bold mb-2">⚡
+                        ZERO-KNOWLEDGE ARCHITECTURE ⚡</p>
                     <p class="text-[10px] text-gray-400 leading-relaxed">
-                        Select a node from the Global Network to initiate a handshake. 
-                        Keys are generated dynamically via Elliptic Curve Diffie-Hellman (ECDH). 
-                        Verify the security emoji with your peer to prevent Man-in-the-Middle (MITM) attacks.
+                        Select a node from the Global Network to initiate a
+                        handshake.
+                        Keys are generated dynamically via Elliptic Curve
+                        Diffie-Hellman (ECDH).
+                        Verify the security emoji with your peer to prevent
+                        Man-in-the-Middle (MITM) attacks.
                     </p>
                 </div>
             </div>
 
             <!-- Input Area -->
             <div class="flex-shrink-0 border-t border-[#00ff66]/20 p-3 bg-[#0a0a0a] flex items-center gap-2">
-                <input type="text" id="messageInput" disabled placeholder="Select a node to establish uplink..." 
+                <input type="text" id="messageInput" disabled placeholder="Select a node to establish uplink..."
                     class="flex-grow bg-[#050505] border border-[#00ff66]/30 rounded p-2.5 text-xs text-[#00ff66] placeholder-gray-600 focus:outline-none focus:border-[#00ff66] focus:ring-1 focus:ring-[#00ff66] transition-all font-sans"
                     onkeypress="handleKeyPress(event)">
-                <button onclick="sendEncryptedMessage()" id="sendBtn" disabled class="bg-[#00ff66]/10 border border-[#00ff66]/60 hover:bg-[#00ff66]/30 px-6 py-2.5 rounded text-xs text-[#00ff66] font-bold transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-95">
+                <button onclick="sendEncryptedMessage()" id="sendBtn" disabled
+                    class="bg-[#00ff66]/10 border border-[#00ff66]/60 hover:bg-[#00ff66]/30 px-6 py-2.5 rounded text-xs text-[#00ff66] font-bold transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-95">
                     TRANSMIT
                 </button>
             </div>
@@ -136,19 +195,26 @@
 
     <!-- Incoming Handshake Modal Overlay -->
     <div id="requestModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[999] justify-center items-center p-4">
-        <div class="bg-[#050505] border-2 border-amber-500 rounded-lg p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+        <div
+            class="bg-[#050505] border-2 border-amber-500 rounded-lg p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(245,158,11,0.2)]">
             <div class="text-amber-500 text-3xl mb-2">⚠️</div>
-            <h2 class="text-sm font-bold text-amber-400 tracking-widest mb-4">INCOMING UPLINK REQUEST</h2>
-            <p class="text-xs text-gray-400 mb-2">Node Alias: <span id="reqAlias" class="text-white font-bold">Unknown</span></p>
+            <h2 class="text-sm font-bold text-amber-400 tracking-widest mb-4">INCOMING
+                UPLINK REQUEST</h2>
+            <p class="text-xs text-gray-400 mb-2">Node Alias: <span id="reqAlias"
+                    class="text-white font-bold">Unknown</span></p>
             <div class="bg-black border border-gray-700 p-3 rounded my-4">
-                <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION EMOJI</p>
+                <p class="text-[10px] text-gray-500 mb-1">SECURITY
+                    VERIFICATION EMOJI</p>
                 <div id="reqEmoji" class="text-4xl">👽</div>
             </div>
-            <p class="text-[10px] text-gray-500 mb-6">Verify this emoji with the sender out-of-band to ensure connection integrity.</p>
-            
+            <p class="text-[10px] text-gray-500 mb-6">Verify this emoji with
+                the sender out-of-band to ensure connection integrity.</p>
+
             <div class="flex gap-3 justify-center">
-                <button onclick="acceptHandshake()" class="flex-1 bg-emerald-900/50 border border-emerald-500 text-emerald-400 py-2 text-xs font-bold rounded hover:bg-emerald-500 hover:text-black transition-all">ACCEPT</button>
-                <button onclick="rejectHandshake()" class="flex-1 bg-red-900/50 border border-red-500 text-red-400 py-2 text-xs font-bold rounded hover:bg-red-500 hover:text-black transition-all">REJECT</button>
+                <button onclick="acceptHandshake()"
+                    class="flex-1 bg-emerald-900/50 border border-emerald-500 text-emerald-400 py-2 text-xs font-bold rounded hover:bg-emerald-500 hover:text-black transition-all">ACCEPT</button>
+                <button onclick="rejectHandshake()"
+                    class="flex-1 bg-red-900/50 border border-red-500 text-red-400 py-2 text-xs font-bold rounded hover:bg-red-500 hover:text-black transition-all">REJECT</button>
             </div>
         </div>
     </div>
@@ -160,7 +226,7 @@
         // ==========================================
         const SECURITY_EMOJIS = ['👽', '👻', '🤖', '🎃', '👾', '🦄', '🐉', '🎭', '☢️', '☣️', '🔥', '🧿', '🧩', '🥷'];
         const BLOCKLIST = new Set();
-        
+
         let localUser = {
             uid: null,
             peerId: null,
@@ -186,8 +252,25 @@
         // Firebase State
         let db = null;
         let auth = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ghostlink-core';
+        const appId = 'ghostlink-core';
         let presenceInterval = null;
+
+        // ==========================================
+        // FIREBASE CONFIG
+        // ==========================================
+        // Replace this with YOUR OWN Firebase project credentials.
+        // Create a free project at https://console.firebase.google.com,
+        // enable "Anonymous" sign-in (Authentication > Sign-in method)
+        // and create a Firestore database (production or test mode),
+        // then paste the config object from Project Settings here.
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDm5bYhE2BQPus9kxT74Kj50syGtKP5-BA",
+            authDomain: "ghost-link-19c20.firebaseapp.com",
+            projectId: "ghost-link-19c20",
+            storageBucket: "ghost-link-19c20.firebasestorage.app",
+            messagingSenderId: "346421330178",
+            appId: "1:346421330178:web:51f22613d38df277a9c21b"
+        };
 
         document.getElementById('headerLocalId').innerText = localUser.alias;
 
@@ -260,7 +343,7 @@
                     ["encrypt", "decrypt"]
                 );
                 logToTerminal("End-to-End Encryption locked. Tunnel is secure.", "success");
-                
+
                 // Update UI
                 document.getElementById('cryptoBadge').classList.remove('hidden');
                 document.getElementById('cryptoBadge').classList.add('flex');
@@ -291,7 +374,7 @@
             const binaryString = atob(base64Data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-            
+
             const iv = bytes.slice(0, 12);
             const ciphertext = bytes.slice(12);
             const decryptedBuffer = await window.crypto.subtle.decrypt(
@@ -307,23 +390,20 @@
         // ==========================================
         async function initFirebase() {
             logToTerminal("Connecting to Firebase Global Grid...", "sys");
-            if (typeof __firebase_config === 'undefined') {
-                logToTerminal("Firebase configuration missing from environment.", "error");
+
+            if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
+                logToTerminal("Firebase config not set! Edit FIREBASE_CONFIG in the source with your own project credentials.", "error");
+                document.getElementById('headerStatus').innerText = "OFFLINE (NO CONFIG)";
+                document.getElementById('headerStatus').className = "text-red-500";
                 return;
             }
 
             try {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = window.firebaseModules.initializeApp(firebaseConfig);
+                const app = window.firebaseModules.initializeApp(FIREBASE_CONFIG);
                 auth = window.firebaseModules.getAuth(app);
                 db = window.firebaseModules.getFirestore(app);
 
-                // Authenticaton
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await window.firebaseModules.signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await window.firebaseModules.signInAnonymously(auth);
-                }
+                await window.firebaseModules.signInAnonymously(auth);
 
                 window.firebaseModules.onAuthStateChanged(auth, (user) => {
                     if (user) {
@@ -335,6 +415,8 @@
 
             } catch (error) {
                 logToTerminal(`Firebase Init Error: ${error.message}`, "error");
+                document.getElementById('headerStatus').innerText = "GRID ERROR";
+                document.getElementById('headerStatus').className = "text-red-500";
             }
         }
 
@@ -356,7 +438,7 @@
         function listenToGlobalGrid() {
             if (!db || !localUser.uid) return;
             const collRef = window.firebaseModules.collection(db, 'artifacts', appId, 'public', 'data', 'ghostlink_users');
-            
+
             window.firebaseModules.onSnapshot(collRef, (snapshot) => {
                 const listDiv = document.getElementById('nodeList');
                 listDiv.innerHTML = '';
@@ -372,21 +454,21 @@
                     onlineCount++;
                     const nodeEl = document.createElement('div');
                     nodeEl.className = "border border-gray-800 bg-[#0a0a0a] p-2 rounded flex justify-between items-center";
-                    
+
                     const statusColor = data.status === 'IDLE' ? 'text-emerald-500' : 'text-red-500';
                     const isBlocked = BLOCKLIST.has(data.peerId);
-                    
+
                     nodeEl.innerHTML = `
                         <div>
                             <div class="text-[11px] font-bold text-gray-300 ${isBlocked ? 'line-through text-red-900' : ''}">${escapeHTML(data.alias)}</div>
                             <div class="text-[9px] ${statusColor}">${data.status}</div>
                         </div>
-                        <button onclick="initiateHandshake('${data.peerId}', '${escapeHTML(data.alias)}')" 
-                            class="bg-[#00ff66]/10 border border-[#00ff66]/50 text-[#00ff66] text-[9px] px-2 py-1 rounded hover:bg-[#00ff66] hover:text-black transition-all disabled:opacity-20"
+                        <button class="bg-[#00ff66]/10 border border-[#00ff66]/50 text-[#00ff66] text-[9px] px-2 py-1 rounded hover:bg-[#00ff66] hover:text-black transition-all disabled:opacity-20"
                             ${data.status !== 'IDLE' || localUser.status !== 'IDLE' || isBlocked ? 'disabled' : ''}>
                             CONNECT
                         </button>
                     `;
+                    nodeEl.querySelector('button').addEventListener('click', () => initiateHandshake(data.peerId, data.alias));
                     listDiv.appendChild(nodeEl);
                 });
 
@@ -409,7 +491,7 @@
         // ==========================================
         function initPeerJS() {
             logToTerminal("Booting local WebRTC interface...", "sys");
-            
+
             // Cleanup existing
             if (peerInstance) peerInstance.destroy();
 
@@ -435,7 +517,7 @@
             // Handle Incoming Connections (Passive Node)
             peerInstance.on('connection', (conn) => {
                 logToTerminal(`Incoming socket request from ${conn.peer}...`, "warning");
-                
+
                 // Anti-Spam: Check Blocklist
                 if (BLOCKLIST.has(conn.peer)) {
                     logToTerminal("Blocked peer attempted connection. Dropping.", "error");
@@ -479,7 +561,7 @@
             logToTerminal(`Initiating quantum link to ${targetAlias}...`, "sys");
 
             const verificationEmoji = SECURITY_EMOJIS[Math.floor(Math.random() * SECURITY_EMOJIS.length)];
-            
+
             // Export Local PubKey
             const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
             const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer)); // Convert to array for JSON transmission via PeerJS
@@ -507,7 +589,7 @@
                 if (data.type === 'SYS_BUSY') {
                     logToTerminal("Target node is busy on another link.", "warning");
                     terminateConnection();
-                } 
+                }
                 else if (data.type === 'HANDSHAKE_INIT' && role === 'receiver') {
                     // Step 2: Receiver gets request
                     pendingRequest = { type: 'incoming', peerId: conn.peer, alias: data.alias, pubKey: new Uint8Array(data.pubKey).buffer, conn: conn };
@@ -558,7 +640,7 @@
             if (!pendingRequest || pendingRequest.type !== 'incoming') return;
             document.getElementById('requestModal').classList.remove('active');
             logToTerminal("Accepting handshake. Generating local key parameters...", "sys");
-            
+
             try {
                 // Export Local PubKey to send back
                 const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
@@ -583,11 +665,11 @@
             if (!pendingRequest || pendingRequest.type !== 'incoming') return;
             document.getElementById('requestModal').classList.remove('active');
             pendingRequest.conn.send({ type: 'HANDSHAKE_REJECT' });
-            
+
             // Add to blocklist temporarily to prevent spamming
             BLOCKLIST.add(pendingRequest.peerId);
             logToTerminal(`Node rejected and temporarily blocked for spam prevention.`, "warning");
-            
+
             terminateConnection();
         };
 
@@ -600,10 +682,10 @@
             document.getElementById('chatStatusIndicator').className = "w-2 h-2 rounded-full bg-[#00ff66] shadow-[0_0_6px_#00ff66] ping-glow";
             document.getElementById('chatStatusText').innerText = `SECURE UPLINK: ${remoteAlias}`;
             document.getElementById('chatStatusText').className = "text-xs font-bold tracking-wide text-[#00ff66]";
-            
+
             document.getElementById('disconnectBtn').classList.remove('hidden');
             document.getElementById('chatBriefing').classList.add('hidden');
-            
+
             document.getElementById('messageInput').disabled = false;
             document.getElementById('messageInput').placeholder = "Enter encrypted payload...";
             document.getElementById('sendBtn').disabled = false;
@@ -624,16 +706,16 @@
             activeSharedAesKey = null;
 
             document.getElementById('requestModal').classList.remove('active');
-            
+
             document.getElementById('chatStatusIndicator').className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]";
             document.getElementById('chatStatusText').innerText = "NO ACTIVE UPLINK";
             document.getElementById('chatStatusText').className = "text-xs font-bold tracking-wide text-red-500";
-            
+
             document.getElementById('disconnectBtn').classList.add('hidden');
             document.getElementById('cryptoBadge').classList.add('hidden');
             document.getElementById('cryptoBadge').classList.remove('flex');
             document.getElementById('chatBriefing').classList.remove('hidden');
-            
+
             document.getElementById('messageInput').disabled = true;
             document.getElementById('messageInput').placeholder = "Select a node to establish uplink...";
             document.getElementById('messageInput').value = '';
@@ -706,8 +788,8 @@
             const w = canvas.width = window.innerWidth, h = canvas.height = window.innerHeight;
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?_-";
             const cols = w / 12;
-            if(!window.rainDrops) window.rainDrops = Array(Math.floor(cols)).fill(1);
-            
+            if (!window.rainDrops) window.rainDrops = Array(Math.floor(cols)).fill(1);
+
             ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
             ctx.fillRect(0, 0, w, h);
             ctx.fillStyle = '#00ff66';
@@ -728,6 +810,16 @@
             await initFirebase();
         };
 
+        // Remove presence doc when the tab/window closes so we don't leave
+        // ghost entries behind in Firestore.
+        window.addEventListener('beforeunload', () => {
+            if (db && localUser.uid) {
+                const docRef = window.firebaseModules.doc(db, 'artifacts', appId, 'public', 'data', 'ghostlink_users', localUser.uid);
+                window.firebaseModules.deleteDoc(docRef).catch(() => { });
+            }
+        });
+
     </script>
 </body>
+
 </html>
