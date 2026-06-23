@@ -112,6 +112,20 @@
                         Verify the security emoji with your peer to prevent Man-in-the-Middle (MITM) attacks.
                     </p>
                 </div>
+
+                <!-- Outgoing Handshake Panel: shows the SAME verification emoji
+                     to the initiator while waiting, so both sides can compare
+                     it out-of-band (previously only the receiver's modal showed it) -->
+                <div id="outgoingHandshakePanel" class="hidden border border-amber-500/40 bg-amber-950/10 rounded p-4 text-center max-w-sm mx-auto mt-10">
+                    <p class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
+                    <p class="text-[10px] text-gray-400 mb-3">Connecting to <span id="outgoingTargetAlias" class="text-white font-bold">-</span></p>
+                    <div class="bg-black border border-gray-700 p-3 rounded mb-3">
+                        <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION EMOJI</p>
+                        <div id="outgoingEmoji" class="text-4xl"></div>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mb-4">Verify this emoji matches what your peer sees, out-of-band.</p>
+                    <button onclick="terminateConnection()" class="text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded transition-all">CANCEL</button>
+                </div>
             </div>
 
             <!-- Input Area -->
@@ -480,12 +494,19 @@
             logToTerminal(`Initiating quantum link to ${targetAlias}...`, "sys");
 
             const verificationEmoji = SECURITY_EMOJIS[Math.floor(Math.random() * SECURITY_EMOJIS.length)];
+
+            // Show the same verification emoji to the initiator so both
+            // sides can compare it out-of-band before chatting.
+            document.getElementById('chatBriefing').classList.add('hidden');
+            document.getElementById('outgoingTargetAlias').innerText = targetAlias;
+            document.getElementById('outgoingEmoji').innerText = verificationEmoji;
+            document.getElementById('outgoingHandshakePanel').classList.remove('hidden');
             
             // Export Local PubKey
             const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
             const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer)); // Convert to array for JSON transmission via PeerJS
 
-            const conn = peerInstance.connect(targetPeerId);
+            const conn = peerInstance.connect(targetPeerId, { serialization: 'json', reliable: true });
             pendingRequest = { type: 'outgoing', emoji: verificationEmoji, targetAlias: targetAlias, conn: conn };
 
             conn.on('open', () => {
@@ -604,6 +625,7 @@
             
             document.getElementById('disconnectBtn').classList.remove('hidden');
             document.getElementById('chatBriefing').classList.add('hidden');
+            document.getElementById('outgoingHandshakePanel').classList.add('hidden');
             
             document.getElementById('messageInput').disabled = false;
             document.getElementById('messageInput').placeholder = "Enter encrypted payload...";
@@ -633,6 +655,7 @@
             document.getElementById('disconnectBtn').classList.add('hidden');
             document.getElementById('cryptoBadge').classList.add('hidden');
             document.getElementById('cryptoBadge').classList.remove('flex');
+            document.getElementById('outgoingHandshakePanel').classList.add('hidden');
             document.getElementById('chatBriefing').classList.remove('hidden');
             
             document.getElementById('messageInput').disabled = true;
