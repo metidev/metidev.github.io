@@ -113,18 +113,28 @@
                     </p>
                 </div>
 
-                <!-- Outgoing Handshake Panel: shows the SAME verification emoji
-                     to the initiator while waiting, so both sides can compare
-                     it out-of-band (previously only the receiver's modal showed it) -->
+                <!-- Outgoing Handshake Panel: the initiator can't compute the
+                     real fingerprint until the peer accepts and sends back
+                     their public key, so this starts as a waiting state and
+                     switches to a fingerprint-confirmation step. -->
                 <div id="outgoingHandshakePanel" class="hidden border border-amber-500/40 bg-amber-950/10 rounded p-4 text-center max-w-sm mx-auto mt-10">
-                    <p class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
+                    <p id="outgoingTitle" class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
                     <p class="text-[10px] text-gray-400 mb-3">Connecting to <span id="outgoingTargetAlias" class="text-white font-bold">-</span></p>
-                    <div class="bg-black border border-gray-700 p-3 rounded mb-3">
-                        <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION EMOJI</p>
-                        <div id="outgoingEmoji" class="text-4xl"></div>
+
+                    <div id="outgoingWaitingText" class="text-[10px] text-gray-500 mb-4">
+                        Waiting for the peer to accept your request...
                     </div>
-                    <p class="text-[10px] text-gray-500 mb-4">Verify this emoji matches what your peer sees, out-of-band.</p>
-                    <button onclick="terminateConnection()" class="text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded transition-all">CANCEL</button>
+
+                    <div id="outgoingEmojiBlock" class="hidden bg-black border border-gray-700 p-3 rounded mb-3">
+                        <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION CODE</p>
+                        <div id="outgoingEmoji" class="text-4xl"></div>
+                        <p class="text-[9px] text-gray-500 mt-2">Compare this with your peer out-of-band before confirming.</p>
+                    </div>
+
+                    <div class="flex gap-2 justify-center">
+                        <button id="outgoingConfirmBtn" onclick="confirmOutgoingFingerprint()" class="hidden flex-1 bg-emerald-900/50 border border-emerald-500 text-emerald-400 py-2 text-[10px] font-bold rounded hover:bg-emerald-500 hover:text-black transition-all">CODE MATCHES — CONFIRM</button>
+                        <button onclick="terminateConnection()" class="flex-1 text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded transition-all">CANCEL</button>
+                    </div>
                 </div>
             </div>
 
