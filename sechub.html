@@ -113,28 +113,18 @@
                     </p>
                 </div>
 
-                <!-- Outgoing Handshake Panel: the initiator can't compute the
-                     real fingerprint until the peer accepts and sends back
-                     their public key, so this starts as a waiting state and
-                     switches to a fingerprint-confirmation step. -->
+                <!-- Outgoing Handshake Panel: shows the SAME verification emoji
+                     to the initiator while waiting, so both sides can compare
+                     it out-of-band (previously only the receiver's modal showed it) -->
                 <div id="outgoingHandshakePanel" class="hidden border border-amber-500/40 bg-amber-950/10 rounded p-4 text-center max-w-sm mx-auto mt-10">
-                    <p id="outgoingTitle" class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
+                    <p class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
                     <p class="text-[10px] text-gray-400 mb-3">Connecting to <span id="outgoingTargetAlias" class="text-white font-bold">-</span></p>
-
-                    <div id="outgoingWaitingText" class="text-[10px] text-gray-500 mb-4">
-                        Waiting for the peer to accept your request...
-                    </div>
-
-                    <div id="outgoingEmojiBlock" class="hidden bg-black border border-gray-700 p-3 rounded mb-3">
-                        <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION CODE</p>
+                    <div class="bg-black border border-gray-700 p-3 rounded mb-3">
+                        <p class="text-[10px] text-gray-500 mb-1">SECURITY VERIFICATION EMOJI</p>
                         <div id="outgoingEmoji" class="text-4xl"></div>
-                        <p class="text-[9px] text-gray-500 mt-2">Compare this with your peer out-of-band before confirming.</p>
                     </div>
-
-                    <div class="flex gap-2 justify-center">
-                        <button id="outgoingConfirmBtn" onclick="confirmOutgoingFingerprint()" class="hidden flex-1 bg-emerald-900/50 border border-emerald-500 text-emerald-400 py-2 text-[10px] font-bold rounded hover:bg-emerald-500 hover:text-black transition-all">CODE MATCHES — CONFIRM</button>
-                        <button onclick="terminateConnection()" class="flex-1 text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded transition-all">CANCEL</button>
-                    </div>
+                    <p class="text-[10px] text-gray-500 mb-4">Verify this emoji matches what your peer sees, out-of-band.</p>
+                    <button onclick="terminateConnection()" class="text-[9px] bg-red-900/30 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded transition-all">CANCEL</button>
                 </div>
             </div>
 
@@ -208,9 +198,6 @@
         // ==========================================
         // RELAY CONFIG
         // ==========================================
-        // Put the URL of YOUR deployed Cloudflare Worker here.
-        // It will look like: wss://ghostlink-relay.YOUR-SUBDOMAIN.workers.dev/ws
-        // (note the "wss://" scheme and the "/ws" path - both required)
         const RELAY_URL = "wss://ghostlink-relay.anwrymhdy1.workers.dev/ws";
 
         document.getElementById('headerLocalId').innerText = localUser.alias;
@@ -443,7 +430,16 @@
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" }
+                        { urls: 'stun:stun.cloudflare.com:3478' },
+                        // UDP TURN (works on most open networks)
+                        { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+                        // TCP TURN fallback (helps when UDP is blocked but TCP:80 isn't)
+                        { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+                        // TURNS over TLS on port 443 - the most firewall/DPI-resistant
+                        // option, since it looks like ordinary HTTPS traffic. This is
+                        // usually what gets a connection through corporate or mobile
+                        // carrier networks that block everything else.
+                        { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
                     ]
                 }
             };
@@ -474,6 +470,21 @@
                     return;
                 }
 
+                // Watch for stuck NAT traversal: if the data channel never
+                // opens (common across two different networks when ICE
+                // can't find a usable path), fail loudly instead of hanging
+                // forever with no feedback.
+                attachIceDiagnostics(conn);
+                const openTimeout = setTimeout(() => {
+                    if (!conn.open) {
+                        logToTerminal(`Connection to ${conn.peer} timed out (NAT traversal failed). Closing.`, "error");
+                        conn.close();
+                        if (localUser.status === 'BUSY') terminateConnection();
+                    }
+                }, 20000);
+                conn.on('open', () => clearTimeout(openTimeout));
+                conn.on('close', () => clearTimeout(openTimeout));
+
                 setupDataChannel(conn, 'receiver');
             });
 
@@ -481,6 +492,33 @@
                 logToTerminal(`WebRTC Engine Error: ${err.type}`, "error");
                 terminateConnection();
             });
+        }
+
+        // Hooks into the underlying RTCPeerConnection (which PeerJS exposes
+        // via conn.peerConnection) to surface real ICE negotiation state.
+        // Without this, a failed NAT traversal between two different
+        // networks looks identical to total silence in the logs.
+        function attachIceDiagnostics(conn) {
+            const tryAttach = () => {
+                const pc = conn.peerConnection;
+                if (!pc) {
+                    setTimeout(tryAttach, 300); // peerConnection isn't set up instantly
+                    return;
+                }
+                pc.oniceconnectionstatechange = () => {
+                    const state = pc.iceConnectionState;
+                    if (state === 'checking') {
+                        logToTerminal(`Negotiating network path with ${conn.peer}...`, "sys");
+                    } else if (state === 'connected' || state === 'completed') {
+                        logToTerminal(`Network path established (${state}).`, "success");
+                    } else if (state === 'failed') {
+                        logToTerminal(`ICE negotiation FAILED with ${conn.peer}. Likely blocked by a restrictive firewall/NAT - TURN relay did not succeed either.`, "error");
+                    } else if (state === 'disconnected') {
+                        logToTerminal(`Network path to ${conn.peer} dropped.`, "warning");
+                    }
+                };
+            };
+            tryAttach();
         }
 
         // ==========================================
@@ -519,7 +557,15 @@
             const conn = peerInstance.connect(targetPeerId, { serialization: 'json', reliable: true });
             pendingRequest = { type: 'outgoing', emoji: verificationEmoji, targetAlias: targetAlias, conn: conn };
 
+            attachIceDiagnostics(conn);
+            const openTimeout = setTimeout(() => {
+                if (!conn.open) {
+                    logToTerminal(`Connection to ${targetAlias} timed out (NAT traversal failed). The target may be behind a restrictive network.`, "error");
+                    terminateConnection();
+                }
+            }, 20000);
             conn.on('open', () => {
+                clearTimeout(openTimeout);
                 logToTerminal(`Socket opened. Transmitting Handshake (Emoji: ${verificationEmoji})...`, "sys");
                 conn.send({
                     type: 'HANDSHAKE_INIT',
@@ -528,6 +574,7 @@
                     pubKey: pubKeyArray
                 });
             });
+            conn.on('close', () => clearTimeout(openTimeout));
 
             setupDataChannel(conn, 'initiator');
         };
