@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GHOST-LINK // Global Secure Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <!-- Firebase removed: replaced with a Cloudflare Worker relay (see RELAY_URL below) -->
@@ -179,9 +178,9 @@
         let localEcdhKeyPair = null;
         let activeSharedAesKey = null;
 
-        // WebRTC State
-        let peerInstance = null;
-        let activeConnection = null;
+        // Chat link state (no more WebRTC - everything flows through the
+        // relay WebSocket as encrypted RELAY payloads)
+        let activePeerId = null;       // who we're currently chatting with
         let pendingRequest = null; // Holds info about incoming or outgoing request
 
         // Spam Prevention
@@ -198,6 +197,9 @@
         // ==========================================
         // RELAY CONFIG
         // ==========================================
+        // Put the URL of YOUR deployed Cloudflare Worker here.
+        // It will look like: wss://ghostlink-relay.YOUR-SUBDOMAIN.workers.dev/ws
+        // (note the "wss://" scheme and the "/ws" path - both required)
         const RELAY_URL = "wss://ghostlink-relay.anwrymhdy1.workers.dev/ws";
 
         document.getElementById('headerLocalId').innerText = localUser.alias;
@@ -329,7 +331,13 @@
 
             relaySocket.addEventListener('open', () => {
                 logToTerminal("Relay connection established.", "success");
-                initPeerJS(); // Get a PeerJS ID, then announce ourselves to the relay
+                // No more PeerJS - our identity is just a random ID we
+                // generate ourselves, since the relay (not a P2P broker)
+                // now owns connection routing.
+                localUser.peerId = crypto.randomUUID();
+                logToTerminal(`Node identity assigned: ${localUser.peerId}`, "success");
+                setStatus('IDLE', 'text-emerald-400');
+                announceToRelay();
             });
 
             relaySocket.addEventListener('message', (event) => {
@@ -342,11 +350,28 @@
 
                 if (data.type === "NODE_LIST") {
                     renderNodeList(data.nodes);
+                } else if (data.type === "RELAY") {
+                    // An encrypted chat/handshake payload relayed from
+                    // another peer. The server never decrypts or stores
+                    // this - it only forwards the opaque bytes.
+                    handleRelayPayload(data.from, data.payload);
+                } else if (data.type === "RELAY_FAILED") {
+                    const relevant = data.to === activePeerId ||
+                        (pendingRequest && (data.to === pendingRequest.targetPeerId || data.to === pendingRequest.peerId));
+                    if (relevant) {
+                        logToTerminal(`Could not reach ${data.to} (offline or left).`, "error");
+                        terminateConnection();
+                    }
+                } else if (data.type === "PEER_OFFLINE") {
+                    // Our linked peer's connection dropped unexpectedly
+                    // (tab closed, network died, etc.) - the relay tells
+                    // us so we don't hang waiting for a reply that will
+                    // never come.
+                    if (data.from === activePeerId || (pendingRequest && data.from === pendingRequest.targetPeerId)) {
+                        logToTerminal("Peer connection lost (disconnected unexpectedly).", "warning");
+                        terminateConnection();
+                    }
                 }
-                // Note: we don't relay WebRTC signaling here - PeerJS's own
-                // cloud broker (0.peerjs.com) already handles SDP/ICE
-                // exchange for peer.connect(). This relay's only job is
-                // presence (who's online).
             });
 
             relaySocket.addEventListener('close', () => {
@@ -366,6 +391,13 @@
             if (relaySocket && relaySocket.readyState === WebSocket.OPEN) {
                 relaySocket.send(JSON.stringify(obj));
             }
+        }
+
+        // Sends an encrypted/control payload to a specific peer through
+        // the relay. The server forwards this verbatim and never stores
+        // or inspects it beyond routing.
+        function relayTo(toPeerId, payload) {
+            relaySend({ type: 'RELAY', to: toPeerId, payload });
         }
 
         function announceToRelay() {
@@ -417,111 +449,6 @@
         }
 
         // ==========================================
-        // PEERJS WEBRTC SIGNALING
-        // ==========================================
-        function initPeerJS() {
-            logToTerminal("Booting local WebRTC interface...", "sys");
-            
-            // Cleanup existing
-            if (peerInstance) peerInstance.destroy();
-
-            const peerConfig = {
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun.cloudflare.com:3478' },
-                        // UDP TURN (works on most open networks)
-                        { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-                        // TCP TURN fallback (helps when UDP is blocked but TCP:80 isn't)
-                        { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
-                        // TURNS over TLS on port 443 - the most firewall/DPI-resistant
-                        // option, since it looks like ordinary HTTPS traffic. This is
-                        // usually what gets a connection through corporate or mobile
-                        // carrier networks that block everything else.
-                        { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
-                    ]
-                }
-            };
-
-            peerInstance = new Peer(undefined, peerConfig);
-
-            peerInstance.on('open', (id) => {
-                localUser.peerId = id;
-                logToTerminal(`P2P Socket bound. Signaling ID: ${id}`, "success");
-                setStatus('IDLE', 'text-emerald-400');
-                announceToRelay(); // Tell the relay we're online
-            });
-
-            // Handle Incoming Connections (Passive Node)
-            peerInstance.on('connection', (conn) => {
-                logToTerminal(`Incoming socket request from ${conn.peer}...`, "warning");
-                
-                // Anti-Spam: Check Blocklist
-                if (BLOCKLIST.has(conn.peer)) {
-                    logToTerminal("Blocked peer attempted connection. Dropping.", "error");
-                    conn.close();
-                    return;
-                }
-
-                // If busy, reject gracefully
-                if (localUser.status !== 'IDLE') {
-                    conn.on('open', () => { conn.send({ type: 'SYS_BUSY' }); setTimeout(() => conn.close(), 500); });
-                    return;
-                }
-
-                // Watch for stuck NAT traversal: if the data channel never
-                // opens (common across two different networks when ICE
-                // can't find a usable path), fail loudly instead of hanging
-                // forever with no feedback.
-                attachIceDiagnostics(conn);
-                const openTimeout = setTimeout(() => {
-                    if (!conn.open) {
-                        logToTerminal(`Connection to ${conn.peer} timed out (NAT traversal failed). Closing.`, "error");
-                        conn.close();
-                        if (localUser.status === 'BUSY') terminateConnection();
-                    }
-                }, 20000);
-                conn.on('open', () => clearTimeout(openTimeout));
-                conn.on('close', () => clearTimeout(openTimeout));
-
-                setupDataChannel(conn, 'receiver');
-            });
-
-            peerInstance.on('error', (err) => {
-                logToTerminal(`WebRTC Engine Error: ${err.type}`, "error");
-                terminateConnection();
-            });
-        }
-
-        // Hooks into the underlying RTCPeerConnection (which PeerJS exposes
-        // via conn.peerConnection) to surface real ICE negotiation state.
-        // Without this, a failed NAT traversal between two different
-        // networks looks identical to total silence in the logs.
-        function attachIceDiagnostics(conn) {
-            const tryAttach = () => {
-                const pc = conn.peerConnection;
-                if (!pc) {
-                    setTimeout(tryAttach, 300); // peerConnection isn't set up instantly
-                    return;
-                }
-                pc.oniceconnectionstatechange = () => {
-                    const state = pc.iceConnectionState;
-                    if (state === 'checking') {
-                        logToTerminal(`Negotiating network path with ${conn.peer}...`, "sys");
-                    } else if (state === 'connected' || state === 'completed') {
-                        logToTerminal(`Network path established (${state}).`, "success");
-                    } else if (state === 'failed') {
-                        logToTerminal(`ICE negotiation FAILED with ${conn.peer}. Likely blocked by a restrictive firewall/NAT - TURN relay did not succeed either.`, "error");
-                    } else if (state === 'disconnected') {
-                        logToTerminal(`Network path to ${conn.peer} dropped.`, "warning");
-                    }
-                };
-            };
-            tryAttach();
-        }
-
-        // ==========================================
         // HANDSHAKE PROTOCOL (EMOJI VERIFICATION)
         // ==========================================
 
@@ -549,87 +476,78 @@
             document.getElementById('outgoingTargetAlias').innerText = targetAlias;
             document.getElementById('outgoingEmoji').innerText = verificationEmoji;
             document.getElementById('outgoingHandshakePanel').classList.remove('hidden');
-            
+
             // Export Local PubKey
             const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
-            const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer)); // Convert to array for JSON transmission via PeerJS
+            const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer));
 
-            const conn = peerInstance.connect(targetPeerId, { serialization: 'json', reliable: true });
-            pendingRequest = { type: 'outgoing', emoji: verificationEmoji, targetAlias: targetAlias, conn: conn };
+            pendingRequest = { type: 'outgoing', emoji: verificationEmoji, targetAlias: targetAlias, targetPeerId: targetPeerId };
 
-            attachIceDiagnostics(conn);
-            const openTimeout = setTimeout(() => {
-                if (!conn.open) {
-                    logToTerminal(`Connection to ${targetAlias} timed out (NAT traversal failed). The target may be behind a restrictive network.`, "error");
-                    terminateConnection();
-                }
-            }, 20000);
-            conn.on('open', () => {
-                clearTimeout(openTimeout);
-                logToTerminal(`Socket opened. Transmitting Handshake (Emoji: ${verificationEmoji})...`, "sys");
-                conn.send({
-                    type: 'HANDSHAKE_INIT',
-                    alias: localUser.alias,
-                    emoji: verificationEmoji,
-                    pubKey: pubKeyArray
-                });
+            relayTo(targetPeerId, {
+                type: 'HANDSHAKE_INIT',
+                alias: localUser.alias,
+                emoji: verificationEmoji,
+                pubKey: pubKeyArray
             });
-            conn.on('close', () => clearTimeout(openTimeout));
-
-            setupDataChannel(conn, 'initiator');
+            logToTerminal(`Handshake transmitted to ${targetAlias} via relay (Emoji: ${verificationEmoji}).`, "sys");
         };
 
-        // Data Channel routing
-        function setupDataChannel(conn, role) {
-            conn.on('data', async (data) => {
-                // Protocol Router
-                if (data.type === 'SYS_BUSY') {
-                    logToTerminal("Target node is busy on another link.", "warning");
-                    terminateConnection();
-                } 
-                else if (data.type === 'HANDSHAKE_INIT' && role === 'receiver') {
-                    // Step 2: Receiver gets request
-                    pendingRequest = { type: 'incoming', peerId: conn.peer, alias: data.alias, pubKey: new Uint8Array(data.pubKey).buffer, conn: conn };
-                    document.getElementById('reqAlias').innerText = data.alias;
-                    document.getElementById('reqEmoji').innerText = data.emoji;
-                    document.getElementById('requestModal').classList.add('active');
-                    setStatus('BUSY', 'text-red-500');
-                }
-                else if (data.type === 'HANDSHAKE_ACCEPT' && role === 'initiator') {
-                    // Step 3: Initiator gets accepted
-                    logToTerminal("Target ACCEPTED handshake.", "success");
-                    try {
-                        const remotePubKeyBuffer = new Uint8Array(data.pubKey).buffer;
-                        await deriveSharedSecret(remotePubKeyBuffer);
-                        finalizeConnection(conn, pendingRequest.targetAlias);
-                    } catch (e) {
-                        terminateConnection();
-                    }
-                }
-                else if (data.type === 'HANDSHAKE_REJECT') {
-                    logToTerminal("Target REJECTED handshake request.", "error");
-                    terminateConnection();
-                }
-                else if (data.type === 'ENC_MESSAGE') {
-                    // Normal Encrypted Message Stream
-                    try {
-                        const decrypted = await decryptPayload(data.payload);
-                        displayMessage(decrypted, 'received');
-                    } catch (e) {
-                        logToTerminal("Dropped corrupted/malicious packet.", "error");
-                    }
-                }
-            });
-
-            conn.on('close', () => {
-                logToTerminal("Socket closed by remote node.", "warning");
+        // Routes incoming relay payloads (handshake control messages and
+        // encrypted chat messages alike) - this replaces the old PeerJS
+        // DataConnection 'data' event handler.
+        async function handleRelayPayload(fromPeerId, payload) {
+            if (payload.type === 'SYS_BUSY') {
+                logToTerminal("Target node is busy on another link.", "warning");
                 terminateConnection();
-            });
-
-            conn.on('error', (err) => {
-                logToTerminal(`Datachannel fault: ${err.message}`, "error");
+            }
+            else if (payload.type === 'HANDSHAKE_INIT') {
+                // Step 2: Receiver gets request
+                if (BLOCKLIST.has(fromPeerId)) {
+                    relayTo(fromPeerId, { type: 'SYS_BUSY' });
+                    return;
+                }
+                if (localUser.status !== 'IDLE') {
+                    relayTo(fromPeerId, { type: 'SYS_BUSY' });
+                    return;
+                }
+                pendingRequest = { type: 'incoming', peerId: fromPeerId, alias: payload.alias, pubKey: new Uint8Array(payload.pubKey).buffer };
+                document.getElementById('reqAlias').innerText = payload.alias;
+                document.getElementById('reqEmoji').innerText = payload.emoji;
+                document.getElementById('requestModal').classList.add('active');
+                setStatus('BUSY', 'text-red-500');
+            }
+            else if (payload.type === 'HANDSHAKE_ACCEPT' && pendingRequest && pendingRequest.type === 'outgoing' && fromPeerId === pendingRequest.targetPeerId) {
+                // Step 3: Initiator gets accepted
+                logToTerminal("Target ACCEPTED handshake.", "success");
+                try {
+                    const remotePubKeyBuffer = new Uint8Array(payload.pubKey).buffer;
+                    await deriveSharedSecret(remotePubKeyBuffer);
+                    finalizeConnection(fromPeerId, pendingRequest.targetAlias);
+                } catch (e) {
+                    terminateConnection();
+                }
+            }
+            else if (payload.type === 'HANDSHAKE_REJECT') {
+                logToTerminal("Target REJECTED handshake request.", "error");
                 terminateConnection();
-            });
+            }
+            else if (payload.type === 'ENC_MESSAGE') {
+                // Normal Encrypted Message Stream - only accept from our
+                // currently active linked peer, never from anyone else.
+                if (fromPeerId !== activePeerId) return;
+                try {
+                    const decrypted = await decryptPayload(payload.payload);
+                    displayMessage(decrypted, 'received');
+                } catch (e) {
+                    logToTerminal("Dropped corrupted/malicious packet.", "error");
+                }
+            }
+            else if (payload.type === 'PEER_LEFT') {
+                if (fromPeerId === activePeerId || (pendingRequest && fromPeerId === pendingRequest.targetPeerId)) {
+                    logToTerminal("Remote node terminated the link.", "warning");
+                    terminateConnection();
+                }
+            }
         }
 
         // Receiver UI Actions
@@ -646,12 +564,12 @@
                 // Derive AES key from sender's PubKey
                 await deriveSharedSecret(pendingRequest.pubKey);
 
-                pendingRequest.conn.send({
+                relayTo(pendingRequest.peerId, {
                     type: 'HANDSHAKE_ACCEPT',
                     pubKey: pubKeyArray
                 });
 
-                finalizeConnection(pendingRequest.conn, pendingRequest.alias);
+                finalizeConnection(pendingRequest.peerId, pendingRequest.alias);
             } catch (e) {
                 logToTerminal("Crypto failure during acceptance.", "error");
                 terminateConnection();
@@ -661,7 +579,7 @@
         window.rejectHandshake = () => {
             if (!pendingRequest || pendingRequest.type !== 'incoming') return;
             document.getElementById('requestModal').classList.remove('active');
-            pendingRequest.conn.send({ type: 'HANDSHAKE_REJECT' });
+            relayTo(pendingRequest.peerId, { type: 'HANDSHAKE_REJECT' });
             
             // Add to blocklist temporarily to prevent spamming
             BLOCKLIST.add(pendingRequest.peerId);
@@ -671,10 +589,13 @@
         };
 
         // Complete the UI swap
-        function finalizeConnection(conn, remoteAlias) {
-            activeConnection = conn;
+        function finalizeConnection(peerId, remoteAlias) {
+            activePeerId = peerId;
             pendingRequest = null;
             setStatus('BUSY', 'text-red-500'); // Busy means in a chat
+            // Tell the relay who we're linked with, so it can notify this
+            // peer if our connection drops unexpectedly.
+            relaySend({ type: 'LINK_STATUS', peerId: peerId });
 
             document.getElementById('chatStatusIndicator').className = "w-2 h-2 rounded-full bg-[#00ff66] shadow-[0_0_6px_#00ff66] ping-glow";
             document.getElementById('chatStatusText').innerText = `SECURE UPLINK: ${remoteAlias}`;
@@ -693,13 +614,17 @@
         }
 
         window.terminateConnection = () => {
-            if (activeConnection) {
-                activeConnection.close();
-                activeConnection = null;
+            // Tell the other side we're leaving (best-effort - if they're
+            // already gone this just goes nowhere, which is fine).
+            const peerToNotify = activePeerId || (pendingRequest && pendingRequest.targetPeerId) || (pendingRequest && pendingRequest.peerId);
+            if (peerToNotify) {
+                relayTo(peerToNotify, { type: 'PEER_LEFT' });
             }
-            if (pendingRequest && pendingRequest.conn) {
-                pendingRequest.conn.close();
-            }
+            // Clear our link status server-side so we don't get spurious
+            // PEER_OFFLINE notifications sent to a stale peer later.
+            relaySend({ type: 'LINK_STATUS', peerId: null });
+
+            activePeerId = null;
             pendingRequest = null;
             activeSharedAesKey = null;
 
@@ -730,7 +655,7 @@
         window.sendEncryptedMessage = async () => {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
-            if (!text || !activeConnection || !activeSharedAesKey) return;
+            if (!text || !activePeerId || !activeSharedAesKey) return;
 
             // Anti-Spam: Max 5 messages per 5 seconds
             const now = Date.now();
@@ -743,7 +668,7 @@
 
             try {
                 const encryptedPayload = await encryptPayload(text);
-                activeConnection.send({ type: 'ENC_MESSAGE', payload: encryptedPayload });
+                relayTo(activePeerId, { type: 'ENC_MESSAGE', payload: encryptedPayload });
                 displayMessage(text, 'sent');
                 input.value = '';
             } catch (e) {
