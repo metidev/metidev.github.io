@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GHOST-WATERMARK // Steganography Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050505;
+      --bg-card: #0a0a0a;
+      --bg-elevated: #0d0d0d;
+      --fg-primary: #00ff66;
+      --fg-dim: #00cc52;
+      --fg-muted: #666;
+      --accent-cyan: #00ffff;
+      --accent-amber: #ffbf00;
+      --accent-red: #ef4444;
+      --border-glow: rgba(0, 255, 102, 0.3);
+      --glow-sm: 0 0 5px rgba(0, 255, 102, 0.4);
+      --glow-md: 0 0 15px rgba(0, 255, 102, 0.15);
+      --glow-lg: 0 0 30px rgba(0, 255, 102, 0.3);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Fira Code', 'Courier New', Courier, monospace;
+      background-color: var(--bg-deep);
+      color: var(--fg-primary);
+      text-shadow: var(--glow-sm);
+      margin: 0; padding: 0; min-height: 100vh;
+    }
+    .scanlines {
+      position: fixed; inset: 0; z-index: 999;
+      pointer-events: none; opacity: 0.7;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+        linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
+      background-size: 100% 4px, 6px 100%;
+    }
+    .matrix-bg {
+      position: fixed; inset: 0; z-index: -1; opacity: 0.12;
+      pointer-events: none;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d0d0d; }
+    ::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+    .ping-glow { animation: pulse 1.5s infinite; }
+    .glow-border { border: 1px solid var(--border-glow); }
+    .glow-sm { box-shadow: var(--glow-sm); }
+    .glow-md { box-shadow: var(--glow-md); }
+    .glow-lg { box-shadow: var(--glow-lg); }
+    .btn {
+      background: rgba(0,255,102,0.1);
+      border: 1px solid var(--border-glow);
+      color: var(--fg-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--fg-primary); color: #000; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.3; pointer-events: none; }
+    .btn-danger {
+      background: rgba(239,68,68,0.1);
+      border-color: rgba(239,68,68,0.5);
+      color: #ef4444;
+    }
+    .btn-danger:hover { background: #ef4444; color: #fff; }
+    .btn-cyan {
+      background: rgba(0,255,204,0.1);
+      border-color: rgba(0,255,204,0.5);
+      color: #00ffcc;
+    }
+    .btn-cyan:hover { background: #00ffcc; color: #000; }
+    .input-field {
+      width: 100%;
+      background: #050505;
+      border: 1px solid var(--border-glow);
+      color: var(--fg-primary);
+      padding: 0.625rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .input-field::placeholder { color: #666; }
+    .input-field:focus { border-color: var(--fg-primary); box-shadow: 0 0 0 1px var(--fg-primary); }
+    .input-field:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .status-idle { color: var(--fg-primary); animation: pulse 1.5s infinite; }
+    .status-busy { color: var(--accent-red); }
+    .status-connecting { color: var(--accent-amber); }
+    .panel {
+      background: rgba(0,0,0,0.95);
+      border: 1px solid var(--border-glow);
+      border-radius: 0.5rem;
+      box-shadow: var(--glow-md);
+      overflow: hidden;
+    }
+    .panel-header {
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-cyan);
+      border-bottom: 1px solid rgba(0,255,102,0.2);
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-elevated);
+    }
+    .panel-body { padding: 0.75rem; }
+    .terminal-log {
+      font-family: inherit;
+      font-size: 0.625rem;
+      line-height: 1.6;
+      color: rgba(0,255,102,0.8);
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .terminal-log .log-line { margin-bottom: 0.125rem; }
+    .terminal-log .log-time { color: #444; }
+    .terminal-log .log-sys { color: var(--accent-cyan); }
+    .terminal-log .log-ok { color: var(--fg-primary); font-weight: 700; }
+    .terminal-log .log-warn { color: var(--accent-amber); }
+    .terminal-log .log-err { color: var(--accent-red); font-weight: 700; }
+    .char-map { font-size: 0.55rem; line-height: 1.4; color: #444; }
+    .char-map kbd {
+      background: #111; border: 1px solid #333;
+      padding: 0.125rem 0.25rem; border-radius: 2px;
+      font-family: inherit; color: var(--fg-dim);
+    }
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1000;
+      background: var(--bg-card); border: 1px solid var(--border-glow);
+      padding: 0.75rem 1rem; border-radius: 0.375rem;
+      font-size: 0.75rem; color: var(--fg-primary);
+      box-shadow: var(--glow-lg);
+      transform: translateY(100px); opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--fg-primary); }
+    .toast.error { border-color: var(--accent-red); color: var(--accent-red); }
+    @media (max-width: 768px) {
+      .panel-body { padding: 0.5rem; }
+      .panel-header { font-size: 0.55rem; }
+    }
+  </style>
+</head>
+<body class="relative flex flex-col min-h-screen">
+  <div class="scanlines" aria-hidden="true"></div>
+  <canvas id="matrixBg" class="matrix-bg"></canvas>
+
+  <header class="flex-shrink-0 glow-border bg-black/80 backdrop-blur-md p-3 z-50">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-3">
+        <div class="status-dot status-idle ping-glow"></div>
+        <h1 class="text-base font-bold tracking-widest text-[var(--fg-primary)] flex items-center gap-2">
+          <span>GHOST-WATERMARK</span>
+          <span class="text-[9px] px-1.5 py-0.5 bg-cyan-900/40 border border-cyan-500/40 rounded text-cyan-400">STEGO_v2</span>
+        </h1>
+      </div>
+      <div class="text-[9px] text-gray-400 font-mono text-center flex gap-4">
+        <span>MODE: <span id="modeStatus" class="text-[var(--fg-primary)]">ENCODE</span></span>
+        <span id="charCount" class="text-gray-500">CHARS: 0/0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-6xl w-full mx-auto p-3 sm:p-4 flex flex-col lg:flex-row gap-3 items-stretch overflow-hidden z-10">
+    <!-- Left Column: Encoder -->
+    <div class="w-full lg:w-1/2 flex flex-col gap-3 h-full overflow-hidden">
+      <!-- Encode Panel -->
+      <section class="panel flex-grow flex flex-col min-h-0" id="encodePanel">
+        <div class="panel-header flex justify-between items-center">
+          <span>🔐 ENCODE PAYLOAD</span>
+          <button id="switchToDecode" class="btn btn-cyan text-[9px] px-2 py-0.5">SWITCH TO DECODE</button>
+        </div>
+        <div class="panel-body flex flex-col flex-grow overflow-hidden">
+          <div class="space-y-3 flex-grow overflow-y-auto pr-1">
+            <div>
+              <label class="block text-[9px] text-gray-400 mb-1 font-bold">VISIBLE CARRIER TEXT</label>
+              <textarea id="visibleText" class="input-field h-28" placeholder="Enter the visible message..."></textarea>
+            </div>
+            <div>
+              <label class="block text-[9px] text-gray-400 mb-1 font-bold">HIDDEN PAYLOAD</label>
+              <textarea id="invisibleText" class="input-field h-28" placeholder="Enter the secret message to embed..."></textarea>
+            </div>
+            <div class="flex gap-2">
+              <button id="encodeBtn" class="btn flex-1">COMBINE & HIDE</button>
+              <button id="copyInvisBtn" class="btn btn-cyan flex-1">COPY INVIS CHARS</button>
+            </div>
+          </div>
+          <div class="border-t border-[var(--border-glow)] pt-3 mt-auto">
+            <label class="block text-[9px] text-gray-400 mb-1 font-bold">ENCODED OUTPUT (READY TO TRANSMIT)</label>
+            <textarea id="combinedText" class="input-field h-28" readonly placeholder="Encoded output appears here..."></textarea>
+            <div class="flex gap-2 mt-2">
+              <button id="copyCombinedBtn" class="btn flex-1" disabled>COPY TO CLIPBOARD</button>
+              <button id="clearEncodeBtn" class="btn btn-danger flex-1">WIPE</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Terminal Log -->
+      <section class="panel flex-shrink-0 h-40">
+        <div class="panel-header flex justify-between items-center">
+          <span>📟 SYSTEM CONSOLE</span>
+          <button id="clearLogs" class="btn text-[8px] px-1.5 py-0.5">[WIPE]</button>
+        </div>
+        <div id="terminalLog" class="terminal-log p-2"></div>
+      </section>
+    </div>
+
+    <!-- Right Column: Decoder -->
+    <div class="w-full lg:w-1/2 flex flex-col gap-3 h-full overflow-hidden">
+      <section class="panel flex-grow flex flex-col min-h-0" id="decodePanel">
+        <div class="panel-header flex justify-between items-center">
+          <span>🔓 DECODE PAYLOAD</span>
+          <button id="switchToEncode" class="btn btn-cyan text-[9px] px-2 py-0.5 hidden">SWITCH TO ENCODE</button>
+        </div>
+        <div class="panel-body flex flex-col flex-grow overflow-hidden">
+          <div class="flex-grow overflow-y-auto pr-1 space-y-3">
+            <div>
+              <label class="block text-[9px] text-gray-400 mb-1 font-bold">RECEIVED TRANSMISSION</label>
+              <textarea id="decodeSource" class="input-field h-28" placeholder="Paste the encoded message here..."></textarea>
+            </div>
+            <div class="flex gap-2">
+              <button id="decodeBtn" class="btn flex-1">DECODE TRANSMISSION</button>
+              <button id="clearDecodeBtn" class="btn btn-danger flex-1">WIPE</button>
+            </div>
+          </div>
+          <div class="border-t border-[var(--border-glow)] pt-3 mt-auto">
+            <label class="block text-[9px] text-gray-400 mb-1 font-bold">EXTRACTED PAYLOAD</label>
+            <textarea id="decodedResult" class="input-field h-28" readonly placeholder="Decoded message appears here..."></textarea>
+            <div class="flex gap-2 mt-2">
+              <button id="copyDecodedBtn" class="btn flex-1" disabled>COPY PAYLOAD</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Character Reference -->
+      <section class="panel flex-shrink-0">
+        <div class="panel-header">🗝 CHARACTER MAP (HEX → INVIS)</div>
+        <div class="panel-body">
+          <div class="char-map grid grid-cols-4 sm:grid-cols-8 gap-1" id="charMap"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <script type="module">
+    // ==========================================
+    // STEGANOGRAPHY ENGINE (Ported from original)
+    // ==========================================
+    const INVIS_MAP = {
+      delimiter: '\u2060', // WORD JOINER
+      '0': '\u206C',  // INHIBIT ARABIC FORM SHAPING
+      '1': '\u00AD',  // SOFT HYPHEN
+      '2': '\u200E',  // LEFT-TO-RIGHT MARK
+      '3': '\u2068',  // FIRST STRONG ISOLATE
+      '4': '\u202C',  // POP DIRECTIONAL FORMATTING
+      '5': '\u2069',  // POP DIRECTIONAL ISOLATE
+      '6': '\u206A',  // INHIBIT SYMMETRIC SWAPPING
+      '7': '\u200B',  // ZERO WIDTH SPACE
+      '8': '\u200C',  // ZERO WIDTH NON-JOINER
+      '9': '\u200D',  // ZERO WIDTH JOINER
+      'a': '\u206D',  // ACTIVATE ARABIC FORM SHAPING
+      'b': '\u206F',  // NOMINAL DIGIT SHAPES
+      'c': '\u2062',  // INVISIBLE TIMES
+      'd': '\u2063',  // INVISIBLE SEPARATOR
+      'e': '\u2064',  // INVISIBLE PLUS
+      'f': '\u206E',  // NATIONAL DIGIT SHAPES
+    };
+    const REV_MAP = Object.fromEntries(Object.entries(INVIS_MAP).map(([k,v]) => [v,k]));
+    const ALL_INVIS = Object.values(INVIS_MAP).join('');
+
+    function toHex(str) {
+          // Original: per-character hex, padded to even length (2, 4, or 6 digits)
+          return [...str].map(c => {
+            const hex = c.charCodeAt(0).toString(16);
+            return hex.length % 2 === 1 ? '0' + hex : hex;
+          }).join('');
+        }
+        function fromHex(hex) {
+          // Original: parseInt on the whole hex chunk (can be 2, 4, or 6 digits)
+          return String.fromCharCode(parseInt(hex, 16));
+        }
+        // Original algorithm: each char -> 2-digit hex + 'x' spacer, then map each hex digit + spacer to invis chars
+    function encodePayload(payload) {
+      let hexWithSpacers = '';
+      for (const ch of payload) {
+        hexWithSpacers += toHex(ch) + 'x';
+      }
+      let out = '';
+      for (const ch of hexWithSpacers) {
+        if (ch === 'x') out += INVIS_MAP.delimiter;
+        else out += INVIS_MAP[ch];
+      }
+      return out;
+    }
+    function decodePayload(text) {
+      const invis = [...text].filter(c => REV_MAP[c]);
+      if (!invis.length) return '';
+      let hexWithSpacers = '';
+      for (const c of invis) {
+        const v = REV_MAP[c];
+        if (v === 'delimiter') hexWithSpacers += 'x';
+        else hexWithSpacers += v;
+      }
+      return hexWithSpacers.split('x').filter(Boolean).map(h => fromHex(h)).join('');
+    }
+
+    // ==========================================
+    // UI STATE & LOGGING
+    // ==========================================
+    const logEl = document.getElementById('terminalLog');
+    function log(msg, type = 'sys') {
+      const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const prefixes = { sys: '[SYS]', ok: '[OK]', warn: '[WARN]', err: '[ERR]' };
+      const classes = { sys: 'log-sys', ok: 'log-ok', warn: 'log-warn', err: 'log-err' };
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `<span class="log-time">[${time}]</span> <span class="${classes[type]}">${prefixes[type]}</span> ${msg}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    window.clearLogs = () => {
+      logEl.innerHTML = '<div class="log-line"><span class="log-sys">[SYS]</span> Logs wiped.</div>';
+    };
+
+    function toast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // ==========================================
+    // MATRIX RAIN
+    // ==========================================
+    const canvas = document.getElementById('matrixBg');
+    const ctx = canvas.getContext('2d');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?_-';
+    let drops = [];
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+      drops = Array(Math.floor(canvas.width / 12)).fill(1);
+    }
+    addEventListener('resize', resize);
+    resize();
+    setInterval(() => {
+      ctx.fillStyle = 'rgba(5,5,5,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00ff66';
+      ctx.font = '12px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        const ch = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(ch, i * 12, drops[i] * 12);
+        if (drops[i] * 12 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }, 40);
+
+    // ==========================================
+    // CHARACTER MAP RENDER
+    // ==========================================
+    const mapEl = document.getElementById('charMap');
+    for (const [hex, char] of Object.entries(INVIS_MAP)) {
+      if (hex === 'delimiter') continue;
+      const kbd = document.createElement('kbd');
+      kbd.textContent = hex.toUpperCase();
+      kbd.title = `U+${char.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0')}`;
+      mapEl.appendChild(kbd);
+    }
+    const delim = document.createElement('kbd');
+    delim.textContent = 'DELIM';
+    delim.title = `U+${INVIS_MAP.delimiter.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0')} (separator)`;
+    delim.style.background = '#1a1a00';
+    delim.style.borderColor = '#444';
+    delim.style.color = '#ffbf00';
+    mapEl.appendChild(delim);
+
+    // ==========================================
+    // ENCODE LOGIC
+    // ==========================================
+    const visibleText = document.getElementById('visibleText');
+    const invisibleText = document.getElementById('invisibleText');
+    const combinedText = document.getElementById('combinedText');
+    const encodeBtn = document.getElementById('encodeBtn');
+    const copyCombinedBtn = document.getElementById('copyCombinedBtn');
+    const clearEncodeBtn = document.getElementById('clearEncodeBtn');
+    const copyInvisBtn = document.getElementById('copyInvisBtn');
+
+    function updateCharCount() {
+      const v = visibleText.value.length;
+      const i = invisibleText.value.length;
+      document.getElementById('charCount').textContent = `CHARS: ${v}/${i}`;
+    }
+    [visibleText, invisibleText].forEach(el => el.addEventListener('input', updateCharCount));
+
+    encodeBtn.addEventListener('click', () => {
+      const carrier = visibleText.value;
+      const payload = invisibleText.value;
+      if (!carrier) return toast('Enter visible carrier text', 'error');
+      if (!payload) return toast('Enter hidden payload', 'error');
+      const encoded = encodePayload(payload);
+      combinedText.value = carrier + encoded + '.';
+      copyCombinedBtn.disabled = false;
+      log(`Encoded ${payload.length} chars → ${encoded.length} invis chars`, 'ok');
+      toast('Payload encoded successfully');
+    });
+
+    copyCombinedBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(combinedText.value);
+      toast('Encoded message copied to clipboard');
+      log('Clipboard: encoded transmission copied', 'ok');
+    });
+
+    copyInvisBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(ALL_INVIS);
+      toast('Full invisible character set copied');
+      log('Clipboard: full invis charset copied', 'ok');
+    });
+
+    clearEncodeBtn.addEventListener('click', () => {
+      visibleText.value = '';
+      invisibleText.value = '';
+      combinedText.value = '';
+      copyCombinedBtn.disabled = true;
+      updateCharCount();
+      log('Encode panel wiped', 'warn');
+    });
+
+    // ==========================================
+    // DECODE LOGIC
+    // ==========================================
+    const decodeSource = document.getElementById('decodeSource');
+    const decodedResult = document.getElementById('decodedResult');
+    const decodeBtn = document.getElementById('decodeBtn');
+    const copyDecodedBtn = document.getElementById('copyDecodedBtn');
+    const clearDecodeBtn = document.getElementById('clearDecodeBtn');
+
+    decodeBtn.addEventListener('click', () => {
+      const src = decodeSource.value;
+      if (!src) return toast('Paste encoded transmission first', 'error');
+      const result = decodePayload(src);
+      if (!result) {
+        toast('No hidden payload detected', 'error');
+        log('Decode failed: no invisible chars found', 'err');
+        return;
+      }
+      decodedResult.value = result;
+      copyDecodedBtn.disabled = false;
+      log(`Decoded payload: "${result}" (${result.length} chars)`, 'ok');
+      toast('Transmission decoded successfully');
+    });
+
+    copyDecodedBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(decodedResult.value);
+      toast('Decoded payload copied');
+      log('Clipboard: decoded payload copied', 'ok');
+    });
+
+    clearDecodeBtn.addEventListener('click', () => {
+      decodeSource.value = '';
+      decodedResult.value = '';
+      copyDecodedBtn.disabled = true;
+      log('Decode panel wiped', 'warn');
+    });
+
+    // ==========================================
+    // PANEL SWITCHING (Mobile UX)
+    // ==========================================
+    const encodePanel = document.getElementById('encodePanel');
+    const decodePanel = document.getElementById('decodePanel');
+    const switchToDecode = document.getElementById('switchToDecode');
+    const switchToEncode = document.getElementById('switchToEncode');
+    const modeStatus = document.getElementById('modeStatus');
+
+    function setMode(mode) {
+      if (mode === 'decode') {
+        encodePanel.style.display = 'none';
+        decodePanel.style.display = 'flex';
+        switchToEncode.classList.remove('hidden');
+        modeStatus.textContent = 'DECODE';
+      } else {
+        encodePanel.style.display = 'flex';
+        decodePanel.style.display = 'none';
+        switchToEncode.classList.add('hidden');
+        modeStatus.textContent = 'ENCODE';
+      }
+    }
+    switchToDecode.addEventListener('click', () => setMode('decode'));
+    switchToEncode.addEventListener('click', () => setMode('encode'));
+
+    // Auto-switch on mobile if decode panel has content
+    decodeSource.addEventListener('input', () => {
+      if (innerWidth < 768 && decodeSource.value && modeStatus.textContent === 'ENCODE') {
+        setMode('decode');
+      }
+    });
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    log('GHOST-WATERMARK STEGO_v2 initialized', 'sys');
+    log('Invisible charset: 16 hex + delimiter loaded', 'ok');
+    log('Awaiting transmission...', 'sys');
+    updateCharCount();
+  </script>
+</body>
+</html>
