@@ -177,9 +177,7 @@
   </header>
 
   <main class="flex-grow max-w-6xl w-full mx-auto p-3 sm:p-4 flex flex-col lg:flex-row gap-3 items-stretch overflow-hidden z-10">
-    <!-- Left Column: Encoder -->
     <div class="w-full lg:w-1/2 flex flex-col gap-3 h-full overflow-hidden">
-      <!-- Encode Panel -->
       <section class="panel flex-grow flex flex-col min-h-0" id="encodePanel">
         <div class="panel-header flex justify-between items-center">
           <span>🔐 ENCODE PAYLOAD</span>
@@ -211,7 +209,6 @@
         </div>
       </section>
 
-      <!-- Terminal Log -->
       <section class="panel flex-shrink-0 h-40">
         <div class="panel-header flex justify-between items-center">
           <span>📟 SYSTEM CONSOLE</span>
@@ -221,7 +218,6 @@
       </section>
     </div>
 
-    <!-- Right Column: Decoder -->
     <div class="w-full lg:w-1/2 flex flex-col gap-3 h-full overflow-hidden">
       <section class="panel flex-grow flex flex-col min-h-0" id="decodePanel">
         <div class="panel-header flex justify-between items-center">
@@ -249,7 +245,6 @@
         </div>
       </section>
 
-      <!-- Character Reference -->
       <section class="panel flex-shrink-0">
         <div class="panel-header">🗝 CHARACTER MAP (HEX → INVIS)</div>
         <div class="panel-body">
@@ -262,43 +257,38 @@
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
   <script type="module">
-    // ==========================================
-    // STEGANOGRAPHY ENGINE (Ported from original)
-    // ==========================================
+
     const INVIS_MAP = {
-      delimiter: '\u2060', // WORD JOINER
-      '0': '\u206C',  // INHIBIT ARABIC FORM SHAPING
-      '1': '\u00AD',  // SOFT HYPHEN
-      '2': '\u200E',  // LEFT-TO-RIGHT MARK
-      '3': '\u2068',  // FIRST STRONG ISOLATE
-      '4': '\u202C',  // POP DIRECTIONAL FORMATTING
-      '5': '\u2069',  // POP DIRECTIONAL ISOLATE
-      '6': '\u206A',  // INHIBIT SYMMETRIC SWAPPING
-      '7': '\u200B',  // ZERO WIDTH SPACE
-      '8': '\u200C',  // ZERO WIDTH NON-JOINER
-      '9': '\u200D',  // ZERO WIDTH JOINER
-      'a': '\u206D',  // ACTIVATE ARABIC FORM SHAPING
-      'b': '\u206F',  // NOMINAL DIGIT SHAPES
-      'c': '\u2062',  // INVISIBLE TIMES
-      'd': '\u2063',  // INVISIBLE SEPARATOR
-      'e': '\u2064',  // INVISIBLE PLUS
-      'f': '\u206E',  // NATIONAL DIGIT SHAPES
+      delimiter: '\u2060', 
+      '0': '\u206C', 
+      '1': '\u206B',
+      '2': '\u2061',
+      '3': '\u2068',  
+      '4': '\u2065',  
+      '5': '\u2069',  
+      '6': '\u206A',
+      '7': '\u200B', 
+      '8': '\u200C',
+      '9': '\u200D', 
+      'a': '\u206D', 
+      'b': '\u206F', 
+      'c': '\u2062', 
+      'd': '\u2063',
+      'e': '\u2064', 
+      'f': '\u206E', 
     };
     const REV_MAP = Object.fromEntries(Object.entries(INVIS_MAP).map(([k,v]) => [v,k]));
     const ALL_INVIS = Object.values(INVIS_MAP).join('');
 
     function toHex(str) {
-          // Original: per-character hex, padded to even length (2, 4, or 6 digits)
           return [...str].map(c => {
             const hex = c.charCodeAt(0).toString(16);
             return hex.length % 2 === 1 ? '0' + hex : hex;
           }).join('');
         }
         function fromHex(hex) {
-          // Original: parseInt on the whole hex chunk (can be 2, 4, or 6 digits)
           return String.fromCharCode(parseInt(hex, 16));
         }
-        // Original algorithm: each char -> 2-digit hex + 'x' spacer, then map each hex digit + spacer to invis chars
     function encodePayload(payload) {
       let hexWithSpacers = '';
       for (const ch of payload) {
@@ -323,9 +313,7 @@
       return hexWithSpacers.split('x').filter(Boolean).map(h => fromHex(h)).join('');
     }
 
-    // ==========================================
-    // UI STATE & LOGGING
-    // ==========================================
+
     const logEl = document.getElementById('terminalLog');
     function log(msg, type = 'sys') {
       const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -348,9 +336,6 @@
       setTimeout(() => t.classList.remove('show'), 2500);
     }
 
-    // ==========================================
-    // MATRIX RAIN
-    // ==========================================
     const canvas = document.getElementById('matrixBg');
     const ctx = canvas.getContext('2d');
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?_-';
@@ -375,9 +360,7 @@
       }
     }, 40);
 
-    // ==========================================
-    // CHARACTER MAP RENDER
-    // ==========================================
+
     const mapEl = document.getElementById('charMap');
     for (const [hex, char] of Object.entries(INVIS_MAP)) {
       if (hex === 'delimiter') continue;
@@ -394,9 +377,7 @@
     delim.style.color = '#ffbf00';
     mapEl.appendChild(delim);
 
-    // ==========================================
-    // ENCODE LOGIC
-    // ==========================================
+
     const visibleText = document.getElementById('visibleText');
     const invisibleText = document.getElementById('invisibleText');
     const combinedText = document.getElementById('combinedText');
@@ -445,9 +426,7 @@
       log('Encode panel wiped', 'warn');
     });
 
-    // ==========================================
-    // DECODE LOGIC
-    // ==========================================
+
     const decodeSource = document.getElementById('decodeSource');
     const decodedResult = document.getElementById('decodedResult');
     const decodeBtn = document.getElementById('decodeBtn');
@@ -482,9 +461,7 @@
       log('Decode panel wiped', 'warn');
     });
 
-    // ==========================================
-    // PANEL SWITCHING (Mobile UX)
-    // ==========================================
+
     const encodePanel = document.getElementById('encodePanel');
     const decodePanel = document.getElementById('decodePanel');
     const switchToDecode = document.getElementById('switchToDecode');
@@ -514,9 +491,7 @@
       }
     });
 
-    // ==========================================
-    // INIT
-    // ==========================================
+
     log('TEXT-WATERMARK STEGO_v2 initialized', 'sys');
     log('Invisible charset: 16 hex + delimiter loaded', 'ok');
     log('Awaiting transmission...', 'sys');
