@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase removed: replaced with a Cloudflare Worker relay (see RELAY_URL below) -->
-
     <style>
         body {
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
@@ -28,7 +26,6 @@
         @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
         .ping-glow { animation: pulse 1.5s infinite; }
         
-        /* Modal Overlay */
         #requestModal { display: none; }
         #requestModal.active { display: flex; }
     </style>
@@ -83,10 +80,8 @@
 
         </div>
 
-        <!-- Right Column: Secure Chat Engine -->
         <div class="flex-grow md:w-8/12 border border-[#00ff66]/30 bg-black/95 rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.1)] flex flex-col overflow-hidden h-full">
             
-            <!-- Target Status Header -->
             <div class="flex-shrink-0 border-b border-[#00ff66]/20 p-3 bg-[#0d0d0d] flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div id="chatStatusIndicator" class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]"></div>
@@ -100,9 +95,7 @@
                 </div>
             </div>
 
-            <!-- Chat Window -->
             <div id="chatMessages" class="flex-grow overflow-y-auto p-4 space-y-3 flex flex-col justify-start relative">
-                <!-- Initial Briefing -->
                 <div id="chatBriefing" class="border border-[#00ff66]/10 bg-[#00ff66]/5 rounded p-3 text-center max-w-lg mx-auto mt-10">
                     <p class="text-xs text-amber-500 font-bold mb-2">⚡ ZERO-KNOWLEDGE ARCHITECTURE ⚡</p>
                     <p class="text-[10px] text-gray-400 leading-relaxed">
@@ -112,9 +105,7 @@
                     </p>
                 </div>
 
-                <!-- Outgoing Handshake Panel: shows the SAME verification emoji
-                     to the initiator while waiting, so both sides can compare
-                     it out-of-band (previously only the receiver's modal showed it) -->
+        
                 <div id="outgoingHandshakePanel" class="hidden border border-amber-500/40 bg-amber-950/10 rounded p-4 text-center max-w-sm mx-auto mt-10">
                     <p class="text-xs text-amber-400 font-bold mb-2">⏳ AWAITING PEER CONFIRMATION</p>
                     <p class="text-[10px] text-gray-400 mb-3">Connecting to <span id="outgoingTargetAlias" class="text-white font-bold">-</span></p>
@@ -127,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- Input Area -->
             <div class="flex-shrink-0 border-t border-[#00ff66]/20 p-3 bg-[#0a0a0a] flex items-center gap-2">
                 <input type="text" id="messageInput" disabled placeholder="Select a node to establish uplink..." 
                     class="flex-grow bg-[#050505] border border-[#00ff66]/30 rounded p-2.5 text-xs text-[#00ff66] placeholder-gray-600 focus:outline-none focus:border-[#00ff66] focus:ring-1 focus:ring-[#00ff66] transition-all font-sans"
@@ -140,7 +130,6 @@
 
     </main>
 
-    <!-- Incoming Handshake Modal Overlay -->
     <div id="requestModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[999] justify-center items-center p-4">
         <div class="bg-[#050505] border-2 border-amber-500 rounded-lg p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(245,158,11,0.2)]">
             <div class="text-amber-500 text-3xl mb-2">⚠️</div>
@@ -159,11 +148,7 @@
         </div>
     </div>
 
-    <!-- Background Scripts -->
     <script type="module">
-        // ==========================================
-        // SYSTEM INITIALIZATION & STATE
-        // ==========================================
         const SECURITY_EMOJIS = ['👽', '👻', '🤖', '🎃', '👾', '🦄', '🐉', '🎭', '☢️', '☣️', '🔥', '🧿', '🧩', '🥷'];
         const BLOCKLIST = new Set();
         
@@ -171,42 +156,30 @@
             uid: null,
             peerId: null,
             alias: `CIPHER-${Math.floor(1000 + Math.random() * 9000)}`,
-            status: 'IDLE' // IDLE, CONNECTING, BUSY
+            status: 'IDLE' 
         };
 
-        // Crypto State
         let localEcdhKeyPair = null;
         let activeSharedAesKey = null;
 
-        // Chat link state (no more WebRTC - everything flows through the
-        // relay WebSocket as encrypted RELAY payloads)
-        let activePeerId = null;       // who we're currently chatting with
-        let pendingRequest = null; // Holds info about incoming or outgoing request
+        let activePeerId = null;     
+        let pendingRequest = null;
 
-        // Spam Prevention
+    
         let spamTracker = {
-            requestTimestamps: [], // Max 3 per minute
-            messageTimestamps: []  // Max 5 per 5 seconds
+            requestTimestamps: [],
+            messageTimestamps: []  
         };
 
-        // Relay (presence + signaling) state
         let relaySocket = null;
         let relayReconnectTimer = null;
         let relayHeartbeatTimer = null;
 
-        // ==========================================
-        // RELAY CONFIG
-        // ==========================================
-        // Put the URL of YOUR deployed Cloudflare Worker here.
-        // It will look like: wss://ghostlink-relay.YOUR-SUBDOMAIN.workers.dev/ws
-        // (note the "wss://" scheme and the "/ws" path - both required)
         const RELAY_URL = "wss://ghostlink-relay.anwrymhdy1.workers.dev/ws";
 
         document.getElementById('headerLocalId').innerText = localUser.alias;
 
-        // ==========================================
-        // UI & TERMINAL HELPERS
-        // ==========================================
+
         function logToTerminal(message, type = 'info') {
             const logsDiv = document.getElementById('terminalLogs');
             const entry = document.createElement('div');
@@ -217,7 +190,13 @@
             else if (type === 'sys') { color = 'text-purple-400'; prefix = '[SYS]'; }
 
             entry.className = `${color} font-mono`;
-            entry.innerHTML = `<span class="text-gray-600">[${new Date().toLocaleTimeString()}]</span> ${prefix} ${message}`;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'text-gray-600';
+            timeSpan.textContent = `[${new Date().toLocaleTimeString()}]`;
+            entry.appendChild(timeSpan);
+            entry.appendChild(document.createTextNode(` ${prefix} ${message}`));
+
             logsDiv.appendChild(entry);
             logsDiv.scrollTop = logsDiv.scrollHeight;
         }
@@ -237,9 +216,7 @@
             return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
-        // ==========================================
-        // CRYPTOGRAPHY ENGINE (ECDH + AES-GCM)
-        // ==========================================
+
         async function initializeCryptoEngine() {
             logToTerminal("Generating Elliptic Curve (P-256) keypair...", "sys");
             try {
@@ -315,9 +292,7 @@
             return dec.decode(decryptedBuffer);
         }
 
-        // ==========================================
-        // RELAY PRESENCE + SIGNALING (Cloudflare Worker)
-        // ==========================================
+
         function connectRelay() {
             if (!RELAY_URL || RELAY_URL.includes("YOUR-WORKER-SUBDOMAIN")) {
                 logToTerminal("Relay URL not set! Edit RELAY_URL in the source with your deployed Worker URL.", "error");
@@ -331,9 +306,7 @@
 
             relaySocket.addEventListener('open', () => {
                 logToTerminal("Relay connection established.", "success");
-                // No more PeerJS - our identity is just a random ID we
-                // generate ourselves, since the relay (not a P2P broker)
-                // now owns connection routing.
+
                 localUser.peerId = crypto.randomUUID();
                 logToTerminal(`Node identity assigned: ${localUser.peerId}`, "success");
                 setStatus('IDLE', 'text-emerald-400');
@@ -351,9 +324,7 @@
                 if (data.type === "NODE_LIST") {
                     renderNodeList(data.nodes);
                 } else if (data.type === "RELAY") {
-                    // An encrypted chat/handshake payload relayed from
-                    // another peer. The server never decrypts or stores
-                    // this - it only forwards the opaque bytes.
+
                     handleRelayPayload(data.from, data.payload);
                 } else if (data.type === "RELAY_FAILED") {
                     const relevant = data.to === activePeerId ||
@@ -363,10 +334,7 @@
                         terminateConnection();
                     }
                 } else if (data.type === "PEER_OFFLINE") {
-                    // Our linked peer's connection dropped unexpectedly
-                    // (tab closed, network died, etc.) - the relay tells
-                    // us so we don't hang waiting for a reply that will
-                    // never come.
+
                     if (data.from === activePeerId || (pendingRequest && data.from === pendingRequest.targetPeerId)) {
                         logToTerminal("Peer connection lost (disconnected unexpectedly).", "warning");
                         terminateConnection();
@@ -393,9 +361,6 @@
             }
         }
 
-        // Sends an encrypted/control payload to a specific peer through
-        // the relay. The server forwards this verbatim and never stores
-        // or inspects it beyond routing.
         function relayTo(toPeerId, payload) {
             relaySend({ type: 'RELAY', to: toPeerId, payload });
         }
@@ -403,7 +368,6 @@
         function announceToRelay() {
             relaySend({ type: "HELLO", peerId: localUser.peerId, alias: localUser.alias });
             clearInterval(relayHeartbeatTimer);
-            // Lightweight heartbeat so our status stays fresh server-side
             relayHeartbeatTimer = setInterval(() => {
                 relaySend({ type: "STATUS", peerId: localUser.peerId, status: localUser.status });
             }, 15000);
@@ -419,7 +383,7 @@
             let onlineCount = 0;
 
             nodes.forEach(data => {
-                if (data.peerId === localUser.peerId) return; // skip self
+                if (data.peerId === localUser.peerId) return; 
 
                 onlineCount++;
                 const nodeEl = document.createElement('div');
@@ -448,15 +412,10 @@
             }
         }
 
-        // ==========================================
-        // HANDSHAKE PROTOCOL (EMOJI VERIFICATION)
-        // ==========================================
 
-        // Step 1: Active Node initiates
         window.initiateHandshake = async (targetPeerId, targetAlias) => {
             if (localUser.status !== 'IDLE') return;
 
-            // Anti-Spam Check: Max 3 requests per minute
             const now = Date.now();
             spamTracker.requestTimestamps = spamTracker.requestTimestamps.filter(t => now - t < 60000);
             if (spamTracker.requestTimestamps.length >= 3) {
@@ -470,14 +429,11 @@
 
             const verificationEmoji = SECURITY_EMOJIS[Math.floor(Math.random() * SECURITY_EMOJIS.length)];
 
-            // Show the same verification emoji to the initiator so both
-            // sides can compare it out-of-band before chatting.
             document.getElementById('chatBriefing').classList.add('hidden');
             document.getElementById('outgoingTargetAlias').innerText = targetAlias;
             document.getElementById('outgoingEmoji').innerText = verificationEmoji;
             document.getElementById('outgoingHandshakePanel').classList.remove('hidden');
 
-            // Export Local PubKey
             const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
             const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer));
 
@@ -492,16 +448,13 @@
             logToTerminal(`Handshake transmitted to ${targetAlias} via relay (Emoji: ${verificationEmoji}).`, "sys");
         };
 
-        // Routes incoming relay payloads (handshake control messages and
-        // encrypted chat messages alike) - this replaces the old PeerJS
-        // DataConnection 'data' event handler.
+
         async function handleRelayPayload(fromPeerId, payload) {
             if (payload.type === 'SYS_BUSY') {
                 logToTerminal("Target node is busy on another link.", "warning");
                 terminateConnection();
             }
             else if (payload.type === 'HANDSHAKE_INIT') {
-                // Step 2: Receiver gets request
                 if (BLOCKLIST.has(fromPeerId)) {
                     relayTo(fromPeerId, { type: 'SYS_BUSY' });
                     return;
@@ -517,7 +470,6 @@
                 setStatus('BUSY', 'text-red-500');
             }
             else if (payload.type === 'HANDSHAKE_ACCEPT' && pendingRequest && pendingRequest.type === 'outgoing' && fromPeerId === pendingRequest.targetPeerId) {
-                // Step 3: Initiator gets accepted
                 logToTerminal("Target ACCEPTED handshake.", "success");
                 try {
                     const remotePubKeyBuffer = new Uint8Array(payload.pubKey).buffer;
@@ -532,8 +484,6 @@
                 terminateConnection();
             }
             else if (payload.type === 'ENC_MESSAGE') {
-                // Normal Encrypted Message Stream - only accept from our
-                // currently active linked peer, never from anyone else.
                 if (fromPeerId !== activePeerId) return;
                 try {
                     const decrypted = await decryptPayload(payload.payload);
@@ -550,18 +500,15 @@
             }
         }
 
-        // Receiver UI Actions
         window.acceptHandshake = async () => {
             if (!pendingRequest || pendingRequest.type !== 'incoming') return;
             document.getElementById('requestModal').classList.remove('active');
             logToTerminal("Accepting handshake. Generating local key parameters...", "sys");
             
             try {
-                // Export Local PubKey to send back
                 const pubKeyBuffer = await window.crypto.subtle.exportKey("raw", localEcdhKeyPair.publicKey);
                 const pubKeyArray = Array.from(new Uint8Array(pubKeyBuffer));
 
-                // Derive AES key from sender's PubKey
                 await deriveSharedSecret(pendingRequest.pubKey);
 
                 relayTo(pendingRequest.peerId, {
@@ -581,20 +528,17 @@
             document.getElementById('requestModal').classList.remove('active');
             relayTo(pendingRequest.peerId, { type: 'HANDSHAKE_REJECT' });
             
-            // Add to blocklist temporarily to prevent spamming
             BLOCKLIST.add(pendingRequest.peerId);
             logToTerminal(`Node rejected and temporarily blocked for spam prevention.`, "warning");
             
             terminateConnection();
         };
 
-        // Complete the UI swap
         function finalizeConnection(peerId, remoteAlias) {
             activePeerId = peerId;
             pendingRequest = null;
-            setStatus('BUSY', 'text-red-500'); // Busy means in a chat
-            // Tell the relay who we're linked with, so it can notify this
-            // peer if our connection drops unexpectedly.
+            setStatus('BUSY', 'text-red-500'); 
+
             relaySend({ type: 'LINK_STATUS', peerId: peerId });
 
             document.getElementById('chatStatusIndicator').className = "w-2 h-2 rounded-full bg-[#00ff66] shadow-[0_0_6px_#00ff66] ping-glow";
@@ -609,19 +553,17 @@
             document.getElementById('messageInput').placeholder = "Enter encrypted payload...";
             document.getElementById('sendBtn').disabled = false;
 
-            document.getElementById('chatMessages').innerHTML = ''; // clear chat
+            document.getElementById('chatMessages').innerHTML = ''; 
             logToTerminal(`Fully synchronized with ${remoteAlias}. Data stream is live.`, "success");
         }
 
         window.terminateConnection = () => {
-            // Tell the other side we're leaving (best-effort - if they're
-            // already gone this just goes nowhere, which is fine).
+
             const peerToNotify = activePeerId || (pendingRequest && pendingRequest.targetPeerId) || (pendingRequest && pendingRequest.peerId);
             if (peerToNotify) {
                 relayTo(peerToNotify, { type: 'PEER_LEFT' });
             }
-            // Clear our link status server-side so we don't get spurious
-            // PEER_OFFLINE notifications sent to a stale peer later.
+
             relaySend({ type: 'LINK_STATUS', peerId: null });
 
             activePeerId = null;
@@ -649,15 +591,11 @@
             logToTerminal("Link terminated. Returned to IDLE state.", "warning");
         };
 
-        // ==========================================
-        // MESSAGE TRANSMISSION & RENDERING
-        // ==========================================
         window.sendEncryptedMessage = async () => {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text || !activePeerId || !activeSharedAesKey) return;
 
-            // Anti-Spam: Max 5 messages per 5 seconds
             const now = Date.now();
             spamTracker.messageTimestamps = spamTracker.messageTimestamps.filter(t => now - t < 5000);
             if (spamTracker.messageTimestamps.length >= 5) {
@@ -705,7 +643,6 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // --- Matrix rain Canvas Renderer ---
         const drawMatrix = () => {
             const canvas = document.getElementById('matrixBg');
             const ctx = canvas.getContext('2d');
@@ -728,15 +665,11 @@
         };
         setInterval(drawMatrix, 40);
 
-        // Bootstrap Application
         window.onload = async () => {
             await initializeCryptoEngine();
             connectRelay();
         };
 
-        // Cleanly close the relay socket when the tab/window closes.
-        // The Durable Object's webSocketClose handler removes us from
-        // the presence list automatically when this happens.
         window.addEventListener('beforeunload', () => {
             clearTimeout(relayReconnectTimer);
             clearInterval(relayHeartbeatTimer);
