@@ -1938,9 +1938,8 @@ const StardustCursor = () => {
     const set = (p: string, v: string) => box.style.setProperty(p, v);
 
     const onPointerMove = (e: PointerEvent) => {
-      const r = box.getBoundingClientRect();
-      const x = e.clientX - r.left;
-      const y = e.clientY - r.top;
+      const x = e.clientX;
+      const y = e.clientY;
       if (has) {
         const dx = x - lx;
         const dy = y - ly;
@@ -1950,7 +1949,6 @@ const StardustCursor = () => {
       }
       set("--x", x.toFixed(1) + "px");
       set("--y", y.toFixed(1) + "px");
-      box.classList.toggle("is-near", Math.hypot(x - r.width / 2, y - r.height / 2) < 60);
       box.classList.add("is-active");
       lx = x;
       ly = y;
@@ -1960,17 +1958,17 @@ const StardustCursor = () => {
     };
 
     const onPointerLeave = () => {
-      box.classList.remove("is-active", "is-near");
+      box.classList.remove("is-active");
       set("--speed", "0");
       has = false;
     };
 
-    box.addEventListener("pointermove", onPointerMove);
-    box.addEventListener("pointerleave", onPointerLeave);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerleave", onPointerLeave);
 
     return () => {
-      box.removeEventListener("pointermove", onPointerMove);
-      box.removeEventListener("pointerleave", onPointerLeave);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerleave", onPointerLeave);
       clearTimeout(idle);
     };
   }, []);
