@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* CRT Screen Effects */
+@keyframes flicker {
+  0% { opacity: 0.98; }
+  50% { opacity: 1; }
+  100% { opacity: 0.99; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.crt-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+.crt-scanlines::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 9999;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Custom Terminal Glows */
+.text-glow {
+  text-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
+}
+
+.border-glow {
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+/* Hide scrollbar for clean terminal look */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050b05;
+}
+::-webkit-scrollbar-thumb {
+  background: #166534;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
+}
