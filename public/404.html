@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | MetiDev</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Page not found. Please check the URL or navigate from the homepage.">
+  <style>
+    :root {
+      --primary: #67e8f9;
+      --dim: #123f4d;
+      --bg: #020c14;
+      --alert: #ff2a6d;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--primary);
+      font-family: 'Fira Code', 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 10px rgba(103, 232, 249, 0.5);
+    }
+    .subtitle {
+      color: var(--alert);
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .info {
+      color: rgba(103, 232, 249, 0.8);
+      line-height: 1.6;
+      text-align: left;
+      margin-bottom: 2rem;
+      padding: 1rem;
+      border: 1px solid var(--dim);
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a:hover {
+      text-shadow: 0 0 6px rgba(103, 232, 249, 0.7);
+    }
+    .links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .links a {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--dim);
+      transition: all 0.2s;
+    }
+    .links a:hover {
+      border-color: var(--primary);
+      background: rgba(103, 232, 249, 0.1);
+    }
+    .markdown-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Markdown content for AI agents -->
+  <script type="text/markdown" class="markdown-content">
+# Page Not Found (404)
+
+The requested page does not exist on this site.
+
+## Site Navigation
+
+- [Home](/) - Main portfolio page
+- [Resume](/#/resume) - Work experience and skills
+- [Projects](/#/projects) - Security tools and applications
+- [Blog](/#/blog) - Technical articles and writeups
+- [Contact](/#/contact) - Get in touch
+
+## Available Resources
+
+- [/llms.txt](/llms.txt) - AI-readable site information
+- [/sitemap.xml](/sitemap.xml) - XML sitemap
+
+## About This Site
+
+This is the personal portfolio of MetiDev (Mehdi Anvari), an offensive security engineer and developer. The site showcases security research, projects, and technical blog posts.
+
+**Status**: This page returned HTTP 404 (Not Found)
+  </script>
+
+  <!-- Visual content for browsers -->
+  <div class="container">
+    <h1>404</h1>
+    <p class="subtitle">// PAGE NOT FOUND</p>
+
+    <div class="info">
+      <p>The requested resource does not exist at this location.</p>
+      <p>Return to the homepage or use the navigation below to find what you're looking for.</p>
+    </div>
+
+    <div class="links">
+      <a href="/">HOME</a>
+      <a href="/#resume">RESUME</a>
+      <a href="/#projects">PROJECTS</a>
+      <a href="/#blog">BLOG</a>
+      <a href="/llms.txt">LLMS.TXT</a>
+    </div>
+  </div>
+</body>
+</html>

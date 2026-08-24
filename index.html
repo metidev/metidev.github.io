@@ -2,21 +2,185 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- Vite rewrites absolute "/..." URLs using vite.config `base` at build time,
-         so these resolve correctly both locally ("/") and on Pages ("/<repo>/"). -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#020c14" />
-    <meta name="description" content="Terminal-style portfolio of an offensive security engineer and developer." />
+    <meta name="description" content="MetiDev (Mehdi Anvari) - Offensive security engineer and full-stack developer specializing in vulnerability research, exploit development, and secure applications." />
+    <meta name="keywords" content="security researcher, penetration testing, vulnerability research, exploit developer, offensive security, React developer, Go developer, Python developer" />
+    <meta name="author" content="Mehdi Anvari" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MetiDev" />
-    <title>MetiDev // Terminal</title>
+    <meta property="og:title" content="MetiDev // Offensive Security Engineer & Developer" />
+    <meta property="og:description" content="Terminal-style portfolio showcasing security research, exploit development, and full-stack projects." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://metidev.github.io" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="MetiDev // Offensive Security Engineer & Developer" />
+    <meta name="twitter:description" content="Security researcher and developer portfolio" />
+    <title>MetiDev // Offensive Security Engineer & Developer</title>
+
+    <!-- Structured Data for AI/SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Mehdi Anvari",
+      "alternateName": "MetiDev",
+      "url": "https://metidev.github.io",
+      "jobTitle": "Offensive Security Engineer",
+      "description": "Security researcher and full-stack developer specializing in vulnerability research, exploit development, and secure applications",
+      "knowsAbout": [
+        "Offensive Security",
+        "Penetration Testing",
+        "Vulnerability Research",
+        "Exploit Development",
+        "Web Application Security",
+        "Reverse Engineering",
+        "React",
+        "Next.js",
+        "Node.js",
+        "Python",
+        "Go",
+        "Rust"
+      ],
+      "sameAs": [
+        "https://github.com/MetiDev",
+        "https://linkedin.com/in/MetiDev",
+        "https://medium.com/@MetiDev"
+      ],
+      "alumniOf": {
+        "@type": "EducationalOrganization",
+        "name": "Cybersecurity"
+      },
+      "hasCredential": [
+        {
+          "@type": "EducationalOccupationalCredential",
+          "credentialCategory": "Offensive Security Certified Professional"
+        },
+        {
+          "@type": "EducationalOccupationalCredential",
+          "credentialCategory": "Offensive Security Web Expert"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Agent-readable metadata -->
+    <meta name="llms-txt" content="/llms.txt" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="AI-readable site information" />
   </head>
   <body>
+    <!-- Server-rendered content for AI crawlers and no-JS environments -->
+    <noscript>
+      <div style="max-width: 800px; margin: 0 auto; padding: 2rem; font-family: monospace; background: #020c14; color: #67e8f9; min-height: 100vh;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 0 0 10px rgba(103, 232, 249, 0.5);">
+          MetiDev // M.A.
+        </h1>
+        <h2 style="font-size: 1.2rem; color: #67e8f9; margin-bottom: 2rem;">
+          OFFENSIVE SECURITY ENGINEER / DEVELOPER
+        </h2>
+
+        <div style="margin-bottom: 3rem; line-height: 1.8;">
+          <p style="margin-bottom: 1rem;">
+            <strong>Status:</strong> AVAILABLE FOR CONTRACT
+          </p>
+          <p style="margin-bottom: 1rem;">
+            Experienced security researcher and full-stack developer specializing in identifying zero-day vulnerabilities, building custom exploit frameworks, and reverse-engineering complex systems.
+          </p>
+          <p style="margin-bottom: 1rem;">
+            <strong>Expertise:</strong> Offensive security, penetration testing, vulnerability research, exploit development, web application security, reverse engineering, and secure software development.
+          </p>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+          <h3 style="color: #67e8f9; margin-bottom: 1rem;">EXPERIENCE</h3>
+          <div style="border-left: 2px solid #123f4d; padding-left: 1rem; margin-bottom: 1rem;">
+            <p style="color: #67e8f9; font-size: 0.9rem;">2024 - Present</p>
+            <p><strong>Senior Security Researcher</strong> @ CyberDyne Systems</p>
+            <p style="color: rgba(103, 232, 249, 0.7);">Leading red team operations, zero-day vulnerability research, and automated exploit development.</p>
+          </div>
+          <div style="border-left: 2px solid #123f4d; padding-left: 1rem; margin-bottom: 1rem;">
+            <p style="color: #67e8f9; font-size: 0.9rem;">2021 - 2024</p>
+            <p><strong>Penetration Tester</strong> @ NullSpace Security</p>
+            <p style="color: rgba(103, 232, 249, 0.7);">Conducted web application and network infrastructure pentests for Fortune 500 clients.</p>
+          </div>
+          <div style="border-left: 2px solid #123f4d; padding-left: 1rem;">
+            <p style="color: #67e8f9; font-size: 0.9rem;">2018 - 2021</p>
+            <p><strong>Software Engineer</strong> @ GlobalTech Solutions</p>
+            <p style="color: rgba(103, 232, 249, 0.7);">Developed secure backend microservices using Node.js and Go.</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+          <h3 style="color: #67e8f9; margin-bottom: 1rem;">SKILLS</h3>
+          <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.5rem;">Offensive Security: 95%</li>
+            <li style="margin-bottom: 0.5rem;">Reverse Engineering: 85%</li>
+            <li style="margin-bottom: 0.5rem;">Python / Go / Bash: 90%</li>
+            <li style="margin-bottom: 0.5rem;">Web Exploitation: 98%</li>
+            <li style="margin-bottom: 0.5rem;">Cryptography: 75%</li>
+            <li style="margin-bottom: 0.5rem;">React / Next.js: 80%</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+          <h3 style="color: #67e8f9; margin-bottom: 1rem;">PROJECTS</h3>
+          <div style="border: 1px solid #123f4d; padding: 1rem; margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.5rem;">GhostNet</h4>
+            <p style="color: rgba(103, 232, 249, 0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">
+              Decentralized, encrypted C2 framework with stealth communication protocols designed for red teaming engagements.
+            </p>
+            <p style="font-size: 0.8rem; color: #67e8f9;">Stack: Go, React, WebSockets</p>
+          </div>
+          <div style="border: 1px solid #123f4d; padding: 1rem; margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.5rem;">VulnScanner.sh</h4>
+            <p style="color: rgba(103, 232, 249, 0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">
+              Extremely fast, lightweight local privilege escalation vector scanner for Unix-based systems.
+            </p>
+            <p style="font-size: 0.8rem; color: #67e8f9;">Stack: Bash, Awk</p>
+          </div>
+          <div style="border: 1px solid #123f4d; padding: 1rem; margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.5rem;">TEXT-WATERMARK</h4>
+            <p style="color: rgba(103, 232, 249, 0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">
+              Steganography engine for embedding hidden watermarks in text using advanced cryptographic techniques.
+            </p>
+            <p style="font-size: 0.8rem; color: #67e8f9;">Stack: HTML, JavaScript, Web Crypto API</p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+          <h3 style="color: #67e8f9; margin-bottom: 1rem;">CERTIFICATIONS</h3>
+          <ul style="list-style: disc; padding-left: 1.5rem;">
+            <li style="margin-bottom: 0.5rem;">OSCP (Offensive Security Certified Professional)</li>
+            <li style="margin-bottom: 0.5rem;">OSWE (Offensive Security Web Expert)</li>
+            <li style="margin-bottom: 0.5rem;">CISSP (Certified Information Systems Security Professional)</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+          <h3 style="color: #67e8f9; margin-bottom: 1rem;">CONNECT</h3>
+          <p style="margin-bottom: 0.5rem;">
+            <a href="https://github.com/MetiDev" style="color: #67e8f9;">GitHub: github.com/MetiDev</a>
+          </p>
+          <p style="margin-bottom: 0.5rem;">
+            <a href="https://linkedin.com/in/MetiDev" style="color: #67e8f9;">LinkedIn: linkedin.com/in/MetiDev</a>
+          </p>
+          <p style="margin-bottom: 0.5rem;">
+            <a href="https://medium.com/@MetiDev" style="color: #67e8f9;">Medium: medium.com/@MetiDev</a>
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid #123f4d; padding-top: 1rem; font-size: 0.8rem; color: rgba(103, 232, 249, 0.5);">
+          <p>v2.1.0 // UNREGISTERED HYPERTERMINAL // 2026</p>
+          <p style="margin-top: 0.5rem;">This site requires JavaScript to function properly. Please enable JavaScript in your browser.</p>
+        </div>
+      </div>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

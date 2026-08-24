@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FormEvent, KeyboardEvent } from "react";
 import {
@@ -94,368 +94,6 @@ const Medium = ({ className = "", size = 24 }: { className?: string; size?: numb
   </svg>
 );
 
-const CRT_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Fira+Code:wght@400;500;700&display=swap');
-
-  :root {
-    --phosphor-primary: #67e8f9;
-    --phosphor-dim: #123f4d;
-    --phosphor-bg: #020c14;
-    --phosphor-alert: #ff2a6d;
-  }
-
-  html, body, #root {
-    min-height: 100%;
-  }
-
-  body {
-    background-color: var(--phosphor-bg);
-    color: var(--phosphor-primary);
-    font-family: 'Fira Code', monospace;
-    overflow-x: hidden;
-    margin: 0;
-  }
-
-  .font-terminal {
-    font-family: 'VT323', monospace;
-  }
-
-  /* ---- cyberpunk glitch ---- */
-  .glitch {
-    position: relative;
-    display: inline-block;
-  }
-
-  .glitch::before,
-  .glitch::after {
-    content: attr(data-text);
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    opacity: 0;
-    text-shadow: none;
-  }
-
-  .glitch::before {
-    color: #ff2a6d;
-    animation: glitch-shift-a 4.2s infinite steps(1);
-  }
-
-  .glitch::after {
-    color: #67e8f9;
-    animation: glitch-shift-b 3.7s infinite steps(1);
-  }
-
-  @keyframes glitch-shift-a {
-    0%, 89%, 96%, 100% { opacity: 0; transform: none; clip-path: inset(0 0 0 0); }
-    90% { opacity: 0.85; transform: translate(-3px, 1px); clip-path: inset(12% 0 58% 0); }
-    92% { opacity: 0.85; transform: translate(2px, -1px); clip-path: inset(62% 0 10% 0); }
-    94% { opacity: 0.9; transform: translate(-2px, 0); clip-path: inset(35% 0 42% 0); }
-  }
-
-  @keyframes glitch-shift-b {
-    0%, 84%, 93%, 100% { opacity: 0; transform: none; clip-path: inset(0 0 0 0); }
-    85% { opacity: 0.7; transform: translate(3px, -1px); clip-path: inset(48% 0 28% 0); }
-    87% { opacity: 0.7; transform: translate(-2px, 1px); clip-path: inset(5% 0 78% 0); }
-    91% { opacity: 0.75; transform: translate(2px, -1px); clip-path: inset(70% 0 6% 0); }
-  }
-
-  @keyframes neon-pulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(103, 232, 249, 0.25) inset, 0 0 8px rgba(103, 232, 249, 0.25); }
-    50% { box-shadow: 0 0 16px rgba(255, 42, 109, 0.45) inset, 0 0 14px rgba(103, 232, 249, 0.5); }
-  }
-
-  .neon-pulse {
-    animation: neon-pulse 3s ease-in-out infinite;
-  }
-
-  @keyframes rgb-split-hover {
-    0% { text-shadow: -2px 0 #ff2a6d, 2px 0 #67e8f9; }
-    100% { text-shadow: 2px 0 #ff2a6d, -2px 0 #67e8f9; }
-  }
-
-  .rgb-split:hover {
-    animation: rgb-split-hover 0.18s steps(2) infinite;
-  }
-
-  @keyframes root-pop {
-    0% { transform: scale(0.9); opacity: 0; }
-    60% { transform: scale(1.03); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .root-pop {
-    animation: root-pop 320ms ease-out both;
-  }
-
-  .no-scrollbar {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  @media (max-width: 640px) {
-    .crt::before {
-      background-size: 100% 3px;
-    }
-
-    .text-glow {
-      text-shadow: 0 0 4px rgba(103, 232, 249, 0.5);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .glitch::before,
-    .glitch::after,
-    .neon-pulse,
-    .flicker-animation,
-    .cursor-blink {
-      animation: none !important;
-    }
-
-    .rgb-split:hover {
-      animation: none;
-    }
-
-    .reading-progress {
-      transition: none;
-    }
-  }
-
-
-  .crt::before {
-    content: " ";
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(18, 16, 16, 0) 50%,
-      rgba(0, 0, 0, 0.25) 50%
-    );
-    background-size: 100% 4px;
-    z-index: 50;
-    pointer-events: none;
-  }
-
-  @keyframes flicker {
-    0% { opacity: 0.95; }
-    5% { opacity: 0.85; }
-    10% { opacity: 0.95; }
-    15% { opacity: 1; }
-    100% { opacity: 1; }
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 220ms ease-out both;
-  }
-
-  .flicker-animation {
-    animation: flicker 2s linear infinite;
-  }
-
-  .text-glow {
-    text-shadow: 0 0 5px rgba(103, 232, 249, 0.6), 0 0 10px rgba(103, 232, 249, 0.3);
-  }
-
-  .border-glow {
-    box-shadow: 0 0 8px rgba(103, 232, 249, 0.3) inset, 0 0 8px rgba(103, 232, 249, 0.3);
-  }
-
-  .hud-border {
-    border: 1px solid var(--phosphor-dim);
-    position: relative;
-  }
-
-  .hud-border::before,
-  .hud-border::after {
-    content: '';
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border: 1px solid var(--phosphor-primary);
-    pointer-events: none;
-  }
-
-  .hud-border::before {
-    top: -1px;
-    left: -1px;
-    border-right: none;
-    border-bottom: none;
-  }
-
-  .hud-border::after {
-    bottom: -1px;
-    right: -1px;
-    border-left: none;
-    border-top: none;
-  }
-
-  .vignette {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
-    z-index: 49;
-    pointer-events: none;
-  }
-
-  .cursor-blink {
-    animation: blink 1s step-end infinite;
-  }
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--phosphor-bg);
-    border-left: 1px solid var(--phosphor-dim);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--phosphor-dim);
-    border: 1px solid var(--phosphor-primary);
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--phosphor-primary);
-  }
-
-  .post-content h2 {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--phosphor-primary);
-    text-shadow: 0 0 5px rgba(103, 232, 249, 0.4);
-    border-bottom: 1px solid var(--phosphor-dim);
-    padding-bottom: 0.35rem;
-    margin: 2rem 0 1rem;
-  }
-
-  .post-content h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--phosphor-primary);
-    margin: 1.5rem 0 0.75rem;
-  }
-
-  .post-content h4 {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--phosphor-primary);
-    margin: 1.25rem 0 0.5rem;
-  }
-
-  .post-content p {
-    line-height: 1.75;
-    margin-bottom: 1rem;
-  }
-
-  .post-content ul {
-    list-style: disc;
-    padding-left: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .post-content li {
-    line-height: 1.7;
-    margin-bottom: 0.35rem;
-  }
-
-  .post-content code {
-    background: rgba(26, 80, 21, 0.35);
-    border: 1px solid var(--phosphor-dim);
-    padding: 1px 5px;
-    font-size: 0.85em;
-    color: var(--phosphor-primary);
-  }
-
-  .post-content pre {
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid var(--phosphor-dim);
-    padding: 1rem;
-    overflow-x: auto;
-    margin-bottom: 1.25rem;
-  }
-
-  .post-content pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 0.85em;
-    line-height: 1.6;
-  }
-
-  .post-content a {
-    color: var(--phosphor-primary);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  .post-content a:hover {
-    text-shadow: 0 0 6px rgba(103, 232, 249, 0.7);
-  }
-
-  .post-content strong {
-    color: var(--phosphor-primary);
-  }
-
-  .post-content blockquote {
-    border-left: 3px solid var(--phosphor-primary);
-    background: rgba(103, 232, 249, 0.06);
-    padding: 0.5rem 1rem;
-    margin: 0 0 1rem;
-    color: rgba(103, 232, 249, 0.85);
-  }
-
-  .reading-progress {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    width: 0%;
-    background: var(--phosphor-primary);
-    box-shadow: 0 0 8px rgba(103, 232, 249, 0.8);
-    z-index: 9999;
-    transition: width 90ms linear;
-    pointer-events: none;
-    will-change: width;
-  }
-
-  @keyframes toastIn {
-    from { opacity: 0; transform: translate(-50%, 10px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-  }
-
-  .toast {
-    position: fixed;
-    bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: min(92vw, 480px);
-    text-align: center;
-    z-index: 70;
-    animation: toastIn 180ms ease-out both;
-  }
-`;
-
 const DATA = {
   resume: [
     {
@@ -487,28 +125,28 @@ const DATA = {
   ],
   projects: [
     {
-      title: "GhostNet",
-      stack: ["Go", "React", "WebSockets"],
+      title: "GhostLink",
+      stack: ["JavaScript", "Encryption", "Diffie–Hellman"],
       desc: "Decentralized, encrypted C2 framework with stealth communication protocols designed for red teaming engagements.",
-      link: "#",
+      link: `${import.meta.env.BASE_URL}projects/sechub.html`,
     },
     {
-      title: "VulnScanner.sh",
-      stack: ["Bash", "Awk"],
-      desc: "Extremely fast, lightweight local privilege escalation vector scanner for Unix-based systems.",
-      link: "#",
+      title: "Linux DNS Jumper",
+      stack: ["Python", "Shell"],
+      desc: "this tool provides a user-friendly way to test, sort, and apply DNS server profiles with a single click.",
+      link: "https://github.com/metidev/linux-DNS-jumper",
     },
     {
-      title: "AuthBypass-CVE",
-      stack: ["Python", "Burp Suite"],
-      desc: "Proof of concept exploit for CVE-2023-XXXXX, demonstrating a critical SAML authentication bypass.",
-      link: "#",
+      title: "Param Hunter",
+      stack: ["JavaScript", "BugBounty", "Burp Suite"],
+      desc: "A professional Chrome extension for discovering every parameter exposed by a website",
+      link: "https://github.com/metidev/paramhunter-pro",
     },
     {
-      title: "SecOps Dashboard",
-      stack: ["Next.js", "Tailwind", "D3.js"],
-      desc: "A real-time threat intelligence visualization platform aggregating data from multiple OSINT sources.",
-      link: "#",
+      title: "TEXT-WATERMARK",
+      stack: ["HTML", "JavaScript", "Web Crypto API"],
+      desc: "Steganography engine for embedding hidden watermarks in text using advanced cryptographic techniques.",
+      link: `${import.meta.env.BASE_URL}projects/t2h.html`,
     },
   ],
   blog: [
@@ -790,14 +428,8 @@ const parseHash = (): { tab: TabId; slug: string | null } => {
 const getPostUrl = (slug: string) =>
   `${window.location.origin}${import.meta.env.BASE_URL}#/blog/${encodeURIComponent(slug)}`;
 
-// ---------------------------------------------------------------------------
-// CTF // PWN THE TERMINAL - hidden flag hunt
-// ---------------------------------------------------------------------------
-
 type FlagDef = { id: string; enc: string; hint: string };
 
-// Flags are XOR'd with a key then Base64-encoded so the raw strings never
-// appear in the bundle. They only exist in memory for a moment at decode time.
 const FLAG_XOR_KEY = "n3on_c1ty_2099";
 
 const decodeFlag = (enc: string) => {
@@ -998,7 +630,7 @@ const NavigationHUD = ({
   );
 };
 
-const MATRIX_CHARS = "ã‚¢ã‚«ã‚µã‚¿ãƒŠãƒãƒžãƒ¤ãƒ©ãƒ¯ã‚¤ã‚­ã‚·ãƒãƒ‹ãƒ’ãƒŸãƒªã‚¦ã‚¯ã‚¹ãƒ„ãƒŒãƒ•ãƒ ãƒ¦ãƒ«0123456789ABCDEF<>[]{}#$%&*+=?";
+const MATRIX_CHARS = "\u30A2\u30AB\u30B5\u30BF\u30CA\u30CF\u30DE\u30E4\u30E9\u30EF\u30A4\u30AD\u30B7\u30C1\u30CB\u30D2\u30DF\u30EA\u30A6\u30AF\u30B9\u30C4\u30CC\u30D5\u30E0\u30E6\u30EB0123456789ABCDEF<>[]{}#$%&*+=?";
 
 const MatrixRain = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1661,7 +1293,6 @@ const BlogSection = () => {
     updateProgress();
     window.addEventListener("scroll", updateProgress, { passive: true });
     window.addEventListener("resize", updateProgress);
-    // Recalculate once fonts/images settle layout.
     const raf = window.requestAnimationFrame(updateProgress);
 
     return () => {
@@ -1686,6 +1317,7 @@ const BlogSection = () => {
   };
 
   const activePost = slug ? BLOG_INDEX.find((p) => p.slug === slug || p.id === slug) ?? null : null;
+  const articleHtml = useMemo(() => (activePost ? markdownToHtml(activePost.body) : ""), [activePost]);
 
   const allTags = [...new Set(BLOG_INDEX.flatMap((p) => p.tags))].sort();
 
@@ -1736,7 +1368,7 @@ const BlogSection = () => {
           <div
             className="post-content max-w-none text-[#67e8f9]/90"
             dangerouslySetInnerHTML={{
-              __html: markdownToHtml(activePost.body),
+              __html: articleHtml,
             }}
           />
 
@@ -2045,7 +1677,6 @@ const ContactSection = () => {
                 autoComplete="off"
               />
             </div>
-            {/* Web3Forms also checks this exact field name */}
             <input type="checkbox" name="botcheck" checked={false} readOnly className="hidden" tabIndex={-1} aria-hidden="true" />
 
             <div className="pt-1 -mx-1 px-1 overflow-x-auto no-scrollbar">
@@ -2094,7 +1725,6 @@ const App = () => {
     prevFoundCount.current = foundFlags.length;
 
     if (justCompleted) {
-      // Let the final terminal output land before the takeover.
       const timer = window.setTimeout(() => setShowRootOverlay(true), 900);
       try {
         window.localStorage.setItem("ctf-root-celebrated", "1");
@@ -2139,7 +1769,6 @@ const App = () => {
   if (booting) {
     return (
       <>
-        <style dangerouslySetInnerHTML={{ __html: CRT_STYLES }} />
         <div className="crt vignette flicker-animation" />
         <BootSequence onComplete={() => setBooting(false)} />
       </>
@@ -2148,7 +1777,6 @@ const App = () => {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: CRT_STYLES }} />
       <div className="crt" />
       <div className="vignette" />
       {matrixOn ? <MatrixRain /> : null}

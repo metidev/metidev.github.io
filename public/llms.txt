@@ -1,0 +1,77 @@
+# MetiDev - Personal Portfolio
+
+> Offensive security engineer and full-stack developer specializing in vulnerability research, exploit development, and secure applications.
+
+## Site Structure
+
+- `/` - Main portfolio homepage
+- `/#/resume` - Work experience, skills, and certifications
+- `/#/projects` - Security tools and applications
+- `/#/blog` - Technical articles and security research
+- `/#/contact` - Contact form and social links
+
+## About
+
+MetiDev (Mehdi Anvari) is a security researcher with expertise in:
+- Offensive security and penetration testing
+- Vulnerability research and zero-day discovery
+- Exploit development and red team operations
+- Web application security
+- Reverse engineering
+- Secure software development
+
+## Technical Skills
+
+- **Languages**: Python, Go, Bash, JavaScript/TypeScript, Rust
+- **Frameworks**: React, Next.js, Node.js
+- **Security**: Kali Linux, Burp Suite, Metasploit, custom exploit frameworks
+- **Tools**: Git, Docker, CI/CD pipelines, automated security scanning
+
+## Projects
+
+- **GhostNet** - Decentralized encrypted C2 framework
+- **TEXT-WATERMARK** - Steganography engine for text watermarking
+- **VulnScanner.sh** - Privilege escalation vector scanner
+- **AuthBypass-CVE** - SAML authentication bypass PoC
+
+## Blog
+
+Technical writeups covering:
+- Web application security
+- IoT and embedded device exploitation
+- Fuzzing and vulnerability research
+- Supply chain security
+- WAF bypass techniques
+
+## Contact
+
+- GitHub: https://github.com/MetiDev
+- LinkedIn: https://linkedin.com/in/MetiDev
+- Medium: https://medium.com/@MetiDev
+
+## Site Information
+
+- Built with: React, Vite, Tailwind CSS
+- Deployed on: GitHub Pages
+- Last updated: 2026
+
+## API Endpoints
+
+This is a static site. No API endpoints are available.
+
+## Content Format
+
+The site content is rendered client-side using React. For raw content access:
+- Blog posts are available in Markdown format in `/src/content/blog/`
+- Project demos are available as standalone HTML files in `/projects/`
+
+## Sitemap
+
+XML sitemap available at `/sitemap.xml`
+
+## Crawl Policy
+
+- Static content only
+- No authentication required
+- Rate limiting: None (static hosting)
+- Robots: Indexing allowed (except 404 pages)
