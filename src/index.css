@@ -516,6 +516,11 @@ body {
   animation: toastIn 180ms ease-out both;
 }
 
+/* ─── Hide default cursor ─── */
+*, *::before, *::after {
+  cursor: none !important;
+}
+
 /* ─── Neon Matrix Cursor ─── */
 #matrix-cursor {
   position: fixed;
