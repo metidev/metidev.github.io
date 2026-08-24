@@ -329,6 +329,48 @@ body {
   color: rgba(103, 232, 249, 0.85);
 }
 
+.post-content .table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--phosphor-dim);
+}
+
+.post-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.post-content thead {
+  background: rgba(18, 63, 77, 0.3);
+}
+
+.post-content th,
+.post-content td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--phosphor-dim);
+  text-align: left;
+}
+
+.post-content th {
+  font-weight: 700;
+  color: var(--phosphor-primary);
+  text-shadow: 0 0 3px rgba(103, 232, 249, 0.3);
+  background: rgba(18, 63, 77, 0.2);
+}
+
+.post-content tbody tr:nth-child(even) {
+  background: rgba(18, 63, 77, 0.1);
+}
+
+.post-content tbody tr:hover {
+  background: rgba(103, 232, 249, 0.05);
+}
+
+.post-content td {
+  color: rgba(103, 232, 249, 0.9);
+}
+
 .reading-progress {
   position: fixed;
   top: 0;

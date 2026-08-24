@@ -265,6 +265,10 @@ const markdownToHtml = (markdown: string) => {
   let codeLines: string[] = [];
   let inCode = false;
   let codeLang = "";
+  let inTable = false;
+  let tableHeaders: string[] = [];
+  let tableAlignments: ("left" | "center" | "right" | "")[] = [];
+  let tableRows: string[][] = [];
 
   const flushParagraph = () => {
     if (!paragraph.length) return;
@@ -292,6 +296,66 @@ const markdownToHtml = (markdown: string) => {
     codeLang = "";
   };
 
+  const flushTable = () => {
+    if (!inTable || tableHeaders.length === 0) return;
+
+    let tableHtml = '<div class="table-wrapper"><table>';
+
+    if (tableHeaders.length > 0) {
+      tableHtml += '<thead><tr>';
+      tableHeaders.forEach((header, i) => {
+        const align = tableAlignments[i] || "";
+        const alignAttr = align ? ` style="text-align: ${align}"` : "";
+        tableHtml += `<th${alignAttr}>${renderInline(header)}</th>`;
+      });
+      tableHtml += '</tr></thead>';
+    }
+
+    if (tableRows.length > 0) {
+      tableHtml += '<tbody>';
+      tableRows.forEach((row) => {
+        tableHtml += '<tr>';
+        row.forEach((cell, i) => {
+          const align = tableAlignments[i] || "";
+          const alignAttr = align ? ` style="text-align: ${align}"` : "";
+          tableHtml += `<td${alignAttr}>${renderInline(cell)}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody>';
+    }
+
+    tableHtml += '</table></div>';
+    html.push(tableHtml);
+
+    inTable = false;
+    tableHeaders = [];
+    tableAlignments = [];
+    tableRows = [];
+  };
+
+  const parseTableCell = (cell: string) => {
+    return escapeHtml(cell.trim());
+  };
+
+  const parseTableSeparator = (line: string): boolean => {
+    const cells = line.split("|").filter((cell) => cell.trim() !== "" || line.startsWith("|") || line.endsWith("|"));
+    if (cells.length === 0) return false;
+
+    return cells.every((cell) => {
+      const trimmed = cell.trim();
+      return /^:?-+:?$/.test(trimmed);
+    });
+  };
+
+  const getAlignment = (cell: string): "" | "left" | "center" | "right" => {
+    const trimmed = cell.trim();
+    if (trimmed.startsWith(":") && trimmed.endsWith(":")) return "center";
+    if (trimmed.endsWith(":")) return "right";
+    if (trimmed.startsWith(":")) return "left";
+    return "";
+  };
+
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
 
@@ -303,6 +367,7 @@ const markdownToHtml = (markdown: string) => {
         flushParagraph();
         flushList();
         flushQuote();
+        flushTable();
         inCode = true;
         codeLang = line.slice(3).trim();
       }
@@ -318,6 +383,9 @@ const markdownToHtml = (markdown: string) => {
       flushParagraph();
       flushList();
       flushQuote();
+      if (inTable) {
+        flushTable();
+      }
       continue;
     }
 
@@ -325,6 +393,7 @@ const markdownToHtml = (markdown: string) => {
       flushParagraph();
       flushList();
       flushQuote();
+      flushTable();
       html.push(`<h2>${escapeHtml(line.slice(2).trim())}</h2>`);
       continue;
     }
@@ -333,6 +402,7 @@ const markdownToHtml = (markdown: string) => {
       flushParagraph();
       flushList();
       flushQuote();
+      flushTable();
       html.push(`<h3>${escapeHtml(line.slice(3).trim())}</h3>`);
       continue;
     }
@@ -341,6 +411,7 @@ const markdownToHtml = (markdown: string) => {
       flushParagraph();
       flushList();
       flushQuote();
+      flushTable();
       html.push(`<h4>${escapeHtml(line.slice(4).trim())}</h4>`);
       continue;
     }
@@ -349,6 +420,7 @@ const markdownToHtml = (markdown: string) => {
     if (listMatch) {
       flushParagraph();
       flushQuote();
+      flushTable();
       listItems.push(escapeHtml(listMatch[1]));
       continue;
     }
@@ -356,8 +428,33 @@ const markdownToHtml = (markdown: string) => {
     if (line.startsWith("> ")) {
       flushParagraph();
       flushList();
+      flushTable();
       quoteLines.push(line.slice(2).trim());
       continue;
+    }
+
+    if (line.includes("|") && !line.startsWith("```")) {
+      const cells = line
+        .split("|")
+        .filter((cell) => cell.trim() !== "" || line.startsWith("|") || line.endsWith("|"))
+        .map((cell) => cell.trim());
+
+      if (!inTable) {
+        if (cells.length > 1) {
+          inTable = true;
+          tableHeaders = cells.map(parseTableCell);
+          tableAlignments = [];
+        }
+      } else if (parseTableSeparator(line)) {
+        tableAlignments = cells.map(getAlignment);
+      } else if (cells.length > 0) {
+        tableRows.push(cells.map(parseTableCell));
+      }
+      continue;
+    }
+
+    if (inTable) {
+      flushTable();
     }
 
     flushList();
@@ -368,6 +465,7 @@ const markdownToHtml = (markdown: string) => {
   flushParagraph();
   flushList();
   flushQuote();
+  flushTable();
   if (inCode) flushCode();
 
   return html.join("\n");
