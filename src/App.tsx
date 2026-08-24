@@ -1924,6 +1924,77 @@ const ContactSection = () => {
   );
 };
 
+const StardustCursor = () => {
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+
+    let lx = 0;
+    let ly = 0;
+    let has = false;
+    let idle: ReturnType<typeof setTimeout>;
+    const set = (p: string, v: string) => box.style.setProperty(p, v);
+
+    const onPointerMove = (e: PointerEvent) => {
+      const r = box.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      if (has) {
+        const dx = x - lx;
+        const dy = y - ly;
+        const d = Math.hypot(dx, dy);
+        if (d > 0.5) set("--angle", Math.atan2(dy, dx).toFixed(3) + "rad");
+        set("--speed", Math.min(1, d / 32).toFixed(3));
+      }
+      set("--x", x.toFixed(1) + "px");
+      set("--y", y.toFixed(1) + "px");
+      box.classList.toggle("is-near", Math.hypot(x - r.width / 2, y - r.height / 2) < 60);
+      box.classList.add("is-active");
+      lx = x;
+      ly = y;
+      has = true;
+      clearTimeout(idle);
+      idle = setTimeout(() => set("--speed", "0"), 120);
+    };
+
+    const onPointerLeave = () => {
+      box.classList.remove("is-active", "is-near");
+      set("--speed", "0");
+      has = false;
+    };
+
+    box.addEventListener("pointermove", onPointerMove);
+    box.addEventListener("pointerleave", onPointerLeave);
+
+    return () => {
+      box.removeEventListener("pointermove", onPointerMove);
+      box.removeEventListener("pointerleave", onPointerLeave);
+      clearTimeout(idle);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={boxRef}
+      className="cur cur-sparkle fixed inset-0 z-[9999] pointer-events-auto"
+      data-cursor="sparkle"
+      role="img"
+      aria-label="Stardust cursor demo"
+    >
+      <span className="cur-hint mono absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
+        hover
+      </span>
+      <i className="cursor" style={{ "--i": 0 } as React.CSSProperties} />
+      <i className="cursor" style={{ "--i": 1 } as React.CSSProperties} />
+      <i className="cursor" style={{ "--i": 2 } as React.CSSProperties} />
+      <i className="cursor" style={{ "--i": 3 } as React.CSSProperties} />
+      <i className="cursor" style={{ "--i": 4 } as React.CSSProperties} />
+    </div>
+  );
+};
+
 const App = () => {
   const [booting, setBooting] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>(() => parseHash().tab);
@@ -2005,6 +2076,7 @@ const App = () => {
     <>
       <div className="crt" />
       <div className="vignette" />
+      <StardustCursor />
       {matrixOn ? <MatrixRain /> : null}
       {showRootOverlay ? <RootOverlay onClose={() => setShowRootOverlay(false)} /> : null}
 
