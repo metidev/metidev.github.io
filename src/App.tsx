@@ -210,10 +210,18 @@ const escapeHtml = (input: string) =>
 
 const renderInline = (escaped: string) =>
   escaped
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/__([^_]+)__/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+    .replace(/_([^_]+)_/g, "<em>$1</em>")
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+    .replace(/==([^=]+)==/g, '<mark>$1</mark>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+    .replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img src="$2" alt="$1" class="post-image" loading="lazy" />')
+    .replace(/\^([^^]+)\^/g, '<sup>$1</sup>')
+    .replace(/~([^~]+)~/g, '<sub>$1</sub>')
+    .replace(/kbd:([^:]+):/g, '<kbd>$1</kbd>');
 
 const estimateReadTime = (text: string) => {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
@@ -278,13 +286,28 @@ const markdownToHtml = (markdown: string) => {
 
   const flushList = () => {
     if (!listItems.length) return;
-    html.push(`<ul>${listItems.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ul>`);
+    const hasTaskItems = listItems.some((item) => /^\[[ x]\]\s/.test(item));
+
+    if (hasTaskItems) {
+      html.push(`<ul class="task-list">${listItems.map((item) => {
+        const isChecked = item.startsWith("[x]");
+        const isUnchecked = item.startsWith("[ ]");
+        if (isChecked || isUnchecked) {
+          const text = item.replace(/^\[[ x]\]\s/, "");
+          return `<li class="task-item"><input type="checkbox" ${isChecked ? "checked" : ""} disabled /> ${renderInline(text)}</li>`;
+        }
+        return `<li>${renderInline(item)}</li>`;
+      }).join("")}</ul>`);
+    } else {
+      html.push(`<ul>${listItems.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ul>`);
+    }
     listItems = [];
   };
 
   const flushQuote = () => {
     if (!quoteLines.length) return;
-    html.push(`<blockquote>${renderInline(escapeHtml(quoteLines.join(" ")))}</blockquote>`);
+    const quoteContent = quoteLines.map((line) => renderInline(escapeHtml(line))).join("<br>");
+    html.push(`<blockquote>${quoteContent}</blockquote>`);
     quoteLines = [];
   };
 
@@ -430,6 +453,27 @@ const markdownToHtml = (markdown: string) => {
       flushList();
       flushTable();
       quoteLines.push(line.slice(2).trim());
+      continue;
+    }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
+      flushParagraph();
+      flushList();
+      flushQuote();
+      flushTable();
+      html.push('<hr class="post-divider" />');
+      continue;
+    }
+
+    const imageMatch = line.trim().match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (imageMatch) {
+      flushParagraph();
+      flushList();
+      flushQuote();
+      flushTable();
+      const alt = escapeHtml(imageMatch[1]);
+      const src = imageMatch[2];
+      html.push(`<figure class="post-figure"><img src="${src}" alt="${alt}" class="post-image" loading="lazy" />${alt ? `<figcaption>${alt}</figcaption>` : ""}</figure>`);
       continue;
     }
 
