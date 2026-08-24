@@ -132,11 +132,10 @@ Press kbd:Ctrl: + kbd:C: to open the command palette.
 
 **Result:**
 
-| Vulnerability | Severity | CVSS | Status |
-|:--------------|:--------:|-----:|--------|
-| SQL Injection | Critical | 9.8 | Fixed |
-| XSS | High | 7.5 | Open |
-| CSRF | Medium | 5.4 | Pending |
+Vulnerability | Severity | CVSS | Status 
+SQL Injection | Critical | 9.8 | Fixed 
+XSS | High | 7.5 | Open 
+CSRF | Medium | 5.4 | Pending 
 
 ---
 

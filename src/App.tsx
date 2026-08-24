@@ -1349,7 +1349,7 @@ const ResumeSection = () => (
       <div className="relative border-l-2 border-[#123f4d] pl-6 space-y-8 ml-3">
         {DATA.resume.map((job, i) => (
           <div key={i} className="relative">
-            <div className="absolute -left-[31px] top-1 w-4 h-4 bg-black border-2 border-[#67e8f9] rounded-full shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
+            <div className="absolute -left-[33px] top-1 w-4 h-4 bg-black border-2 border-[#67e8f9] rounded-full shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
             <div className="text-[#67e8f9]/60 text-sm font-terminal mb-1">{job.year}</div>
             <h3 className="text-lg font-bold text-glow">{job.title}</h3>
             <div className="text-[#67e8f9]/80 text-sm mb-2">@ {job.company}</div>
