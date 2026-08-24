@@ -516,116 +516,35 @@ body {
   animation: toastIn 180ms ease-out both;
 }
 
-/* ─── Stardust Cursor ─── */
-:root {
-  --ink: currentColor;
-  --ink-2: #67e8f9;
-  --ink-3: #ff2a6d;
-}
-
-@property --x { syntax: '<length-percentage>'; inherits: true; initial-value: 50%; }
-@property --y { syntax: '<length-percentage>'; inherits: true; initial-value: 50%; }
-@property --angle { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
-@property --speed { syntax: '<number>'; inherits: true; initial-value: 0; }
-
-.cur {
-  --c: var(--ink-2);
-  --c2: var(--ink-3);
+/* ─── Neon Matrix Cursor ─── */
+#matrix-cursor {
   position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  display: block;
-  overflow: hidden;
-  cursor: none;
-  touch-action: none;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 18px;
   pointer-events: none;
   z-index: 99999;
+  transform: translate(0, 0);
+}
+#matrix-cursor svg {
+  display: block;
+  overflow: visible;
 }
 
-.cur > * {
-  pointer-events: none;
-}
-
-body, body * {
-  cursor: none !important;
-}
-
-.cur-hint {
-  position: absolute;
-  color: rgba(103, 232, 249, 0.55);
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-.cur.is-active .cur-hint { opacity: 0; }
-
-.cur-word {
-  display: none;
-  font: 600 30px/1 "JetBrains Mono", monospace;
-  letter-spacing: 0.08em;
-  color: var(--ink);
-  pointer-events: none;
-  user-select: none;
-}
-
-.cursor {
+.matrix-char {
   position: fixed;
-  left: var(--x);
-  top: var(--y);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--c);
-  transform: translate(-50%, -50%);
-  transition: left 0.16s cubic-bezier(0.22, 1, 0.36, 1),
-              top 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  top: 0;
+  left: 0;
   pointer-events: none;
-  will-change: left, top;
-}
-
-/* Stardust — twinkling star shedding a trail of sparkles */
-.cur-sparkle .cursor {
-  width: calc(15px - var(--i) * 2px);
-  height: calc(15px - var(--i) * 2px);
-  background: var(--c);
-  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
-  transition-duration: calc(0.1s + var(--i) * 0.07s);
-  opacity: calc(1 - var(--i) * 0.16);
-  animation: cur-twinkle 1.2s ease-in-out infinite, cur-idle-glitch 4s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.15s), 0s;
-}
-@keyframes cur-twinkle {
-  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0); }
-  50%      { transform: translate(-50%, -50%) scale(0.55) rotate(45deg); }
-}
-
-@keyframes cur-idle-glitch {
-  0%, 90%, 100% { filter: none; transform: translate(-50%, -50%) scale(var(--s, 1)) rotate(var(--r, 0deg)); }
-  91% { filter: hue-rotate(90deg) brightness(1.4); transform: translate(calc(-50% + 2px), -50%) scale(var(--s, 1)) rotate(var(--r, 0deg)); }
-  92% { filter: hue-rotate(-45deg) brightness(0.8); transform: translate(calc(-50% - 2px), calc(-50% + 1px)) scale(var(--s, 1)) rotate(var(--r, 0deg)); }
-  93% { filter: hue-rotate(180deg) saturate(2); transform: translate(-50%, calc(-50% - 1px)) scale(var(--s, 1)) rotate(var(--r, 0deg)); }
-  94% { filter: none; }
-  95% { filter: hue-rotate(45deg) brightness(1.5); transform: translate(calc(-50% + 1px), -50%) scale(var(--s, 1)) rotate(var(--r, 0deg)); }
-  96% { filter: none; }
-}
-
-.cur.is-active .cursor {
-  animation: cur-twinkle 1.2s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.15s);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cur .cursor {
-    animation: none !important;
-  }
-}
-
-/* Hide default cursor globally when .cur is present */
-.cur * {
-  cursor: none;
+  z-index: 99998;
+  color: var(--phosphor-primary);
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow:
+    0 0 3px var(--phosphor-primary),
+    0 0 7px rgba(103, 232, 249, 0.3);
+  user-select: none;
+  will-change: transform, opacity;
 }

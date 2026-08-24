@@ -1924,72 +1924,63 @@ const ContactSection = () => {
   );
 };
 
-const StardustCursor = () => {
-  const boxRef = useRef<HTMLDivElement>(null);
-
+const NeonMatrixCursor = () => {
   useEffect(() => {
-    const box = boxRef.current;
-    if (!box) return;
+    const CHARS = "アカサタナハマ01#$%*+-.<>/\\";
+    const SPAWN_INTERVAL = 55;
+    let lastSpawn = 0;
 
-    let lx = 0;
-    let ly = 0;
-    let has = false;
-    let idle: ReturnType<typeof setTimeout>;
-    const set = (p: string, v: string) => box.style.setProperty(p, v);
-
-    const onPointerMove = (e: PointerEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      if (has) {
-        const dx = x - lx;
-        const dy = y - ly;
-        const d = Math.hypot(dx, dy);
-        if (d > 0.5) set("--angle", Math.atan2(dy, dx).toFixed(3) + "rad");
-        set("--speed", Math.min(1, d / 32).toFixed(3));
+    const onMouseMove = (e: MouseEvent) => {
+      const cursor = document.getElementById("matrix-cursor");
+      if (cursor) {
+        cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
       }
-      set("--x", x.toFixed(1) + "px");
-      set("--y", y.toFixed(1) + "px");
-      box.classList.add("is-active");
-      lx = x;
-      ly = y;
-      has = true;
-      clearTimeout(idle);
-      idle = setTimeout(() => set("--speed", "0"), 120);
+
+      const now = performance.now();
+      if (now - lastSpawn > SPAWN_INTERVAL) {
+        lastSpawn = now;
+
+        const el = document.createElement("span");
+        el.className = "matrix-char";
+        el.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+
+        const drift = (Math.random() - 0.5) * 14;
+        const fall = 16 + Math.random() * 16;
+        const startOpacity = 0.65 + Math.random() * 0.25;
+
+        el.style.left = `${e.clientX + 8 + Math.random() * 8 - 4}px`;
+        el.style.top = `${e.clientY + 8}px`;
+        el.style.opacity = String(startOpacity);
+        el.style.transform = "translate(-50%,-50%) scale(1)";
+
+        document.body.appendChild(el);
+
+        requestAnimationFrame(() => {
+          el.style.transition = "transform 0.7s ease-out, opacity 0.7s ease-out";
+          el.style.transform = `translate(calc(-50% + ${drift}px), calc(-50% + ${fall}px)) scale(0.85)`;
+          el.style.opacity = "0";
+        });
+
+        setTimeout(() => el.remove(), 750);
+      }
     };
 
-    const onPointerLeave = () => {
-      box.classList.remove("is-active");
-      set("--speed", "0");
-      has = false;
-    };
-
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerleave", onPointerLeave);
-
-    return () => {
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerleave", onPointerLeave);
-      clearTimeout(idle);
-    };
+    document.addEventListener("mousemove", onMouseMove);
+    return () => document.removeEventListener("mousemove", onMouseMove);
   }, []);
 
   return (
-    <div
-      ref={boxRef}
-      className="cur cur-sparkle"
-      data-cursor="sparkle"
-      role="img"
-      aria-label="Stardust cursor demo"
-    >
-      <span className="cur-hint mono" aria-hidden="true">
-        hover
-      </span>
-      <span className="cur-word" aria-hidden="true" />
-      <i className="cursor" style={{ "--i": 0 } as React.CSSProperties} />
-      <i className="cursor" style={{ "--i": 1 } as React.CSSProperties} />
-      <i className="cursor" style={{ "--i": 2 } as React.CSSProperties} />
-      <i className="cursor" style={{ "--i": 3 } as React.CSSProperties} />
-      <i className="cursor" style={{ "--i": 4 } as React.CSSProperties} />
+    <div id="matrix-cursor">
+      <svg width="16" height="18" viewBox="0 0 16 18">
+        <path
+          d="M1 1 L1 15 L4.6 11.8 L11.5 10.8 Z"
+          fill="none"
+          stroke="#67e8f9"
+          strokeWidth="1.1"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 };
@@ -2075,7 +2066,7 @@ const App = () => {
     <>
       <div className="crt" />
       <div className="vignette" />
-      <StardustCursor />
+      <NeonMatrixCursor />
       {matrixOn ? <MatrixRain /> : null}
       {showRootOverlay ? <RootOverlay onClose={() => setShowRootOverlay(false)} /> : null}
 
