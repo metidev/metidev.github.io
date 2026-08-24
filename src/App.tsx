@@ -992,14 +992,83 @@ const InteractiveTerminal = ({
     switch (cmd) {
       case "help":
         output =
-          "Available commands:\n  ls         - List directory contents\n  cd <dir>   - Change directory (home, resume, projects, blog, contact)\n  whoami     - Print effective user id\n  neofetch   - Display system information\n  blog       - List published log entries\n  read <id>  - Open a log entry from the terminal\n  matrix     - Toggle the rain\n  clear      - Clear terminal screen\n  sudo       - Execute command as superuser\n\nSome commands are undocumented. Real hackers read everything.";
+          "Available commands:\n  ls         - List directory contents\n  cd <dir>   - Change directory (home, resume, projects, blog, contact)\n  whoami     - Print user profile and device details\n  neofetch   - Display system information\n  blog       - List published log entries\n  read <id>  - Open a log entry from the terminal\n  matrix     - Toggle the rain\n  clear      - Clear terminal screen\n  sudo       - Execute command as superuser\n\nSome commands are undocumented. Real hackers read everything.";
         break;
       case "ls":
         output = "home/  resume/  projects/  blog/  contact/";
         break;
-      case "whoami":
-        output = "metidev";
+      case "whoami": {
+        const ua = navigator.userAgent;
+        const parseUA = (str: string) => {
+          const browser = str.includes("Firefox")
+            ? "Firefox"
+            : str.includes("Edg")
+            ? "Edge"
+            : str.includes("Chrome")
+            ? "Chrome"
+            : str.includes("Safari")
+            ? "Safari"
+            : "Unknown";
+
+          const os = str.includes("Win")
+            ? "Windows"
+            : str.includes("Mac")
+            ? "macOS"
+            : str.includes("Linux")
+            ? "Linux"
+            : str.includes("Android")
+            ? "Android"
+            : str.includes("iPhone") || str.includes("iPad")
+            ? "iOS"
+            : "Unknown";
+
+          return { browser, os };
+        };
+
+        const { browser, os } = parseUA(ua);
+        const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory
+          ? `${(navigator as unknown as { deviceMemory: number }).deviceMemory} GB`
+          : "N/A";
+        const cores = navigator.hardwareConcurrency ?? "N/A";
+        const lang = navigator.language || "N/A";
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "N/A";
+        const now = new Date();
+        const localTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const screenRes = `${window.screen.width}x${window.screen.height}`;
+        const viewRes = `${window.innerWidth}x${window.innerHeight}`;
+        const dpr = window.devicePixelRatio || 1;
+        const online = navigator.onLine ? "ONLINE" : "OFFLINE";
+
+        output = [
+          "",
+          "┌─────────────────────────────────────────┐",
+          "│  USER PROFILE  //  METIDEV              │",
+          "├─────────────────────────────────────────┤",
+          `│  User:     metidev (guest@term)`,
+          `│  Role:     Offensive Security Engineer`,
+          `│  Status:   ACTIVE`,
+          `├─────────────────────────────────────────┤`,
+          `│  OS:        ${os}`,
+          `│  Browser:   ${browser}`,
+          `│  Platform:  ${navigator.platform}`,
+          `│  Language:  ${lang}`,
+          `│  Timezone:  ${tz}`,
+          `│  Local:     ${localTime}`,
+          `├─────────────────────────────────────────┤`,
+          `│  CPU Cores:     ${cores}`,
+          `│  Device Memory: ${memory}`,
+          `│  Screen:        ${screenRes}`,
+          `│  Viewport:      ${viewRes}`,
+          `│  DPR:           ${dpr}x`,
+          `│  Connection:    ${online}`,
+          `├─────────────────────────────────────────┤`,
+          `│  IP Hint:  For OSINT, check /dev/tcp/ip`,
+          `│  Flags:    ${loadFoundFlags().length}/${FLAGS.length} captured`,
+          "└─────────────────────────────────────────┘",
+          "",
+        ].join("\n");
         break;
+      }
       case "sudo":
       case "sudo su":
         output = "Permission denied: This incident will be reported.";
