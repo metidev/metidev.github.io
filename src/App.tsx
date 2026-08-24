@@ -1000,32 +1000,44 @@ const InteractiveTerminal = ({
       case "whoami": {
         const ua = navigator.userAgent;
         const parseUA = (str: string) => {
-          const browser = str.includes("Firefox")
-            ? "Firefox"
-            : str.includes("Edg")
-            ? "Edge"
-            : str.includes("Chrome")
-            ? "Chrome"
-            : str.includes("Safari")
-            ? "Safari"
-            : "Unknown";
+          let browser = "Unknown";
+          if (str.includes("Firefox/")) browser = `Firefox ${str.split("Firefox/")[1]?.split(" ")[0] ?? ""}`;
+          else if (str.includes("Edg/")) browser = `Edge ${str.split("Edg/")[1]?.split(" ")[0] ?? ""}`;
+          else if (str.includes("OPR/") || str.includes("Opera/")) browser = `Opera ${str.split("OPR/")[1]?.split(" ")[0] ?? ""}`;
+          else if (str.includes("Chrome/") && !str.includes("Edg/")) browser = `Chrome ${str.split("Chrome/")[1]?.split(" ")[0] ?? ""}`;
+          else if (str.includes("Safari/") && str.includes("Version/")) browser = `Safari ${str.split("Version/")[1]?.split(" ")[0] ?? ""}`;
 
-          const os = str.includes("Win")
-            ? "Windows"
-            : str.includes("Mac")
-            ? "macOS"
-            : str.includes("Linux")
-            ? "Linux"
-            : str.includes("Android")
-            ? "Android"
-            : str.includes("iPhone") || str.includes("iPad")
-            ? "iOS"
-            : "Unknown";
+          let os = "Unknown";
+          let device = "Desktop";
+          if (str.includes("Windows NT 10.0")) os = "Windows 10/11";
+          else if (str.includes("Windows NT 6.3")) os = "Windows 8.1";
+          else if (str.includes("Windows NT 6.2")) os = "Windows 8";
+          else if (str.includes("Windows NT 6.1")) os = "Windows 7";
+          else if (str.includes("Windows")) os = "Windows";
+          else if (str.includes("Mac OS X")) os = `macOS ${str.split("Mac OS X")[1]?.split(";")[0]?.trim().replace(/_/g, ".") ?? ""}`;
+          else if (str.includes("CrOS")) os = "ChromeOS";
+          else if (str.includes("Linux")) os = "Linux";
 
-          return { browser, os };
+          if (str.includes("Android")) {
+            os = `Android ${str.split("Android")[1]?.split(";")[0]?.trim() ?? ""}`;
+            device = "Mobile";
+          }
+          if (str.includes("iPhone")) {
+            os = "iOS";
+            device = "iPhone";
+          } else if (str.includes("iPad")) {
+            os = "iPadOS";
+            device = "iPad";
+          } else if (str.includes("iPod")) {
+            os = "iOS";
+            device = "iPod";
+          }
+          if (str.includes("Mobile") || str.includes("Android")) device = "Mobile";
+
+          return { browser, os, device };
         };
 
-        const { browser, os } = parseUA(ua);
+        const { browser, os, device } = parseUA(ua);
         const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory
           ? `${(navigator as unknown as { deviceMemory: number }).deviceMemory} GB`
           : "N/A";
@@ -1038,33 +1050,36 @@ const InteractiveTerminal = ({
         const viewRes = `${window.innerWidth}x${window.innerHeight}`;
         const dpr = window.devicePixelRatio || 1;
         const online = navigator.onLine ? "ONLINE" : "OFFLINE";
+        const touch = navigator.maxTouchPoints > 0 ? "YES" : "NO";
 
         output = [
           "",
-          "┌─────────────────────────────────────────┐",
-          "│  USER PROFILE  //  METIDEV              │",
-          "├─────────────────────────────────────────┤",
-          `│  User:     metidev (guest@term)`,
-          `│  Role:     Offensive Security Engineer`,
-          `│  Status:   ACTIVE`,
-          `├─────────────────────────────────────────┤`,
+          "┌──────────────────────────────────────────┐",
+          "│   USER PROFILE  //  METIDEV              │",
+          "├──────────────────────────────────────────┤",
+          `│  User:      metidev (guest@term)`,
+          `│  Role:      Offensive Security Engineer`,
+          `│  Status:    ACTIVE`,
+          `├──────────────────────────────────────────┤`,
           `│  OS:        ${os}`,
           `│  Browser:   ${browser}`,
+          `│  Device:    ${device}`,
+          `│  Touch:     ${touch}`,
           `│  Platform:  ${navigator.platform}`,
           `│  Language:  ${lang}`,
           `│  Timezone:  ${tz}`,
           `│  Local:     ${localTime}`,
-          `├─────────────────────────────────────────┤`,
+          `├──────────────────────────────────────────┤`,
           `│  CPU Cores:     ${cores}`,
           `│  Device Memory: ${memory}`,
           `│  Screen:        ${screenRes}`,
           `│  Viewport:      ${viewRes}`,
           `│  DPR:           ${dpr}x`,
           `│  Connection:    ${online}`,
-          `├─────────────────────────────────────────┤`,
+          `├──────────────────────────────────────────┤`,
           `│  IP Hint:  For OSINT, check /dev/tcp/ip`,
           `│  Flags:    ${loadFoundFlags().length}/${FLAGS.length} captured`,
-          "└─────────────────────────────────────────┘",
+          "└──────────────────────────────────────────┘",
           "",
         ].join("\n");
         break;
