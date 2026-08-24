@@ -1057,9 +1057,9 @@ const InteractiveTerminal = ({
           "┌──────────────────────────────────────────┐",
           "│   USER PROFILE  //  METIDEV              │",
           "├──────────────────────────────────────────┤",
-          `│  User:      metidev (guest@term)`,
-          `│  Role:      Offensive Security Engineer`,
-          `│  Status:    ACTIVE`,
+          `│  User:      metidev (guest@term)         │`,
+          `│  Role:      Offensive Security Engineer  |`,
+          `│  Status:    ACTIVE                       |`,
           `├──────────────────────────────────────────┤`,
           `│  OS:        ${os}`,
           `│  Browser:   ${browser}`,
@@ -1978,14 +1978,15 @@ const StardustCursor = () => {
   return (
     <div
       ref={boxRef}
-      className="cur cur-sparkle fixed inset-0 z-[9999] pointer-events-auto"
+      className="cur cur-sparkle"
       data-cursor="sparkle"
       role="img"
       aria-label="Stardust cursor demo"
     >
-      <span className="cur-hint mono absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
+      <span className="cur-hint mono" aria-hidden="true">
         hover
       </span>
+      <span className="cur-word" aria-hidden="true" />
       <i className="cursor" style={{ "--i": 0 } as React.CSSProperties} />
       <i className="cursor" style={{ "--i": 1 } as React.CSSProperties} />
       <i className="cursor" style={{ "--i": 2 } as React.CSSProperties} />
