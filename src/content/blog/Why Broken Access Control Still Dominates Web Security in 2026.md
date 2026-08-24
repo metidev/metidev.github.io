@@ -16,7 +16,7 @@ Developers add authentication, deploy WAFs, rotate secrets, run vulnerability sc
 
 Humanity has apparently decided that authorization is harder than quantum physics.
 
-The latest OWASP Top 10, released as the **2025 edition**, keeps Broken Access Control at **A01**, making it the highest-ranked web application security risk. OWASP's data indicates that 3.73% of tested applications had at least one weakness mapped to this category.
+The latest OWASP Top 10, released as the **2025 edition**, keeps Broken Access Control at **A01**, making it the highest-ranked web application security risk.
 
 This article focuses on how these vulnerabilities actually appear in modern applications and how a pentester can approach them systematically.
 
@@ -57,6 +57,110 @@ The attacker did not bypass authentication.
 They simply asked for something they were never supposed to receive.
 
 That's the important distinction.
+
+## BOLA vs. IDOR: closely related, but not identical
+
+These two terms are often used interchangeably in security discussions, which is understandable because the internet enjoys turning related concepts into vocabulary soup.
+
+They are **not exactly the same thing**.
+
+### BOLA
+
+**BOLA**, or **Broken Object Level Authorization**, describes a failure to enforce authorization when a user accesses a specific object through an API.
+
+For example:
+
+```http
+GET /api/invoices/7813
+Authorization: Bearer USER_A_TOKEN
+```
+
+If invoice `7813` belongs to User B and the API returns it to User A, the core problem is **broken object-level authorization**.
+
+The object might be identified by:
+
+```text
+7813
+550e8400-e29b-41d4-a716-446655440000
+abc123
+```
+
+It does not matter whether the identifier is predictable.
+
+The security failure is that the server did not enforce the authorization policy for the requested object.
+
+### IDOR
+
+**IDOR**, or **Insecure Direct Object Reference**, describes a common way this problem is exposed: the application accepts a client-controlled reference to an internal object and fails to properly protect that reference.
+
+For example:
+
+```http
+GET /api/invoices/7812
+```
+
+becomes:
+
+```http
+GET /api/invoices/7813
+```
+
+and the server returns an object the user should not see.
+
+The important detail is that the object reference itself is exposed to the client and can be manipulated.
+
+### The easiest way to remember the difference
+
+Think of it like this:
+
+```text
+IDOR = the exposed/manipulable object reference
+BOLA = the missing authorization check around that object
+```
+
+In practice, an IDOR-style attack can result in a BOLA vulnerability.
+
+But **BOLA does not require a classic numeric IDOR pattern**.
+
+For example, suppose the API uses a GraphQL query:
+
+```graphql
+query {
+    invoice(uuid: "550e8400-e29b-41d4-a716-446655440000") {
+        total
+        customer
+    }
+}
+```
+
+The UUID may be impossible to guess.
+
+If a user obtains it legitimately and the server still returns another tenant's invoice without checking authorization, the application still has a **BOLA** problem.
+
+Likewise, BOLA can affect actions other than simple object retrieval:
+
+```http
+PATCH /api/projects/42
+DELETE /api/documents/abc123
+POST /api/accounts/7/transfer
+```
+
+The common factor is the missing authorization decision for the object being acted upon.
+
+### Practical comparison
+
+ Concept | Main idea | Requires predictable ID? 
+ **IDOR** | Client can manipulate a direct object reference | No 
+ **BOLA** | Server fails to enforce authorization for a specific object | No 
+ **Typical IDOR → BOLA** | Change object reference and access another user's resource | No 
+
+So during a pentest, avoid reporting every object-access bug simply as "IDOR."
+
+A more precise finding might be:
+
+> **Broken Object Level Authorization (BOLA) via an insecure direct object reference**
+
+That tells the developer both **what failed** and **how the failure was exposed**.
 
 ## Why does this vulnerability keep happening?
 
@@ -121,9 +225,38 @@ If a button is hidden in JavaScript, that does not mean the operation is protect
 
 The attacker can simply send the request manually.
 
-## A real-world testing workflow
+## Horizontal vs. vertical privilege escalation
 
-This is where access-control testing becomes much more useful than a collection of random Burp Suite clicks.
+Access-control vulnerabilities generally fall into two useful categories.
+
+### Horizontal privilege escalation
+
+A normal user accesses another user's resources.
+
+For example:
+
+```text
+User A -> /api/orders/1001
+User A -> /api/orders/1002
+```
+
+If order `1002` belongs to User B and is returned, the application has an authorization failure.
+
+### Vertical privilege escalation
+
+A lower-privileged user accesses functionality intended for a higher-privileged role.
+
+For example:
+
+```http
+POST /api/admin/users/disable
+```
+
+The application may correctly authenticate the attacker but fail to verify that they have an administrative role.
+
+That can turn a normal account into an administrative foothold.
+
+## A real-world testing workflow
 
 For an authorized assessment, use a repeatable workflow.
 
@@ -144,9 +277,7 @@ User B → normal user
 Admin  → privileged user
 ```
 
-Keep the accounts separate.
-
-Do not test against another customer's real account. Apart from being unethical, it tends to make reports unnecessarily exciting.
+Keep the accounts separate and use only resources created for the assessment.
 
 ### Step 2: Build an access-control map
 
@@ -167,8 +298,6 @@ POST   /api/projects/42/members
 GET    /api/admin/users
 ```
 
-You do not need to test every request equally.
-
 Focus on requests that:
 
 - access user-specific data
@@ -185,10 +314,11 @@ Look for parameters that identify resources:
 ```text
 user_id
 account_id
+customer_id
 order_id
 invoice_id
-project_id
 document_id
+project_id
 tenant_id
 file_id
 ```
@@ -199,34 +329,18 @@ Also inspect identifiers inside:
 - URL paths
 - query parameters
 - GraphQL variables
-- cookies
 - custom headers
 
 For example:
 
 ```http
-GET /api/orders/1001
-```
-
-or:
-
-```json
-{
-  "order_id": 1001,
-  "user_id": 42
-}
+GET /api/documents/450
+Cookie: session=userA
 ```
 
 ### Step 4: Establish the baseline
 
-Before modifying anything, send the legitimate request from User A.
-
-For example:
-
-```http
-GET /api/orders/1001
-Authorization: Bearer USER_A_TOKEN
-```
+Send the legitimate request from User A.
 
 Record:
 
@@ -242,7 +356,7 @@ This becomes your baseline.
 
 ### Step 5: Perform a horizontal authorization test
 
-Now switch only the object identifier:
+Switch only the object identifier:
 
 ```http
 GET /api/orders/1002
@@ -258,21 +372,11 @@ Assume:
 
 A secure application should reject the second request.
 
-Typical expected behavior:
-
-```text
-403 Forbidden
-```
-
-or, depending on the application, a controlled `404 Not Found`.
-
 A vulnerability exists when User A receives User B's resource despite having no legitimate access.
 
 ### Step 6: Test write operations
 
-Do not stop after finding readable objects.
-
-Repeat the same methodology for:
+Repeat the methodology for:
 
 ```text
 POST
@@ -295,11 +399,9 @@ Content-Type: application/json
 
 If `1043` belongs to User B, determine whether User A can modify it.
 
-For destructive operations, use dedicated test objects created specifically for the assessment.
+For destructive operations, use disposable test resources.
 
 ### Step 7: Perform a vertical authorization test
-
-Now compare privileges between User A and Admin.
 
 Capture an administrative request:
 
@@ -321,9 +423,7 @@ If a normal user can perform an administrative action, you have a **vertical pri
 
 ### Step 8: Test tenant isolation
 
-For multi-tenant applications, repeat the same process across organizations.
-
-Example:
+For multi-tenant applications:
 
 ```text
 Organization A
@@ -346,13 +446,9 @@ Is the user authenticated?
 Does this object belong to the user's allowed tenant?
 ```
 
-Checking only the user's identity is not enough.
-
 ### Step 9: Test alternative API paths
 
-A common mistake is testing only the obvious web endpoint.
-
-Try to determine whether the same object is exposed through:
+Determine whether the same object is exposed through:
 
 ```text
 Web API
@@ -364,74 +460,27 @@ Download endpoint
 Search endpoint
 ```
 
-For example:
+A resource protected in one interface may be exposed through another.
 
-```text
-/api/orders/1002
-/api/mobile/orders/1002
-/graphql
-/api/orders/export?id=1002
-```
-
-A resource that is protected in one interface may be exposed through another.
-
-### Step 10: Test HTTP method differences
-
-Sometimes authorization is implemented for one method but forgotten for another.
-
-Compare:
-
-```http
-GET /api/users/1043
-```
-
-with:
-
-```http
-PATCH /api/users/1043
-```
-
-and:
-
-```http
-DELETE /api/users/1043
-```
-
-The important question is not whether every method exists.
-
-It is whether every sensitive operation enforces the correct policy.
-
-### Step 11: Verify the impact safely
+### Step 10: Verify the impact safely
 
 Once you suspect a vulnerability, prove it with the smallest possible action.
 
-For data access:
+For data access, access one controlled object belonging to User B.
 
-```text
-Access one controlled object belonging to User B.
-```
+For modification, change a harmless test field.
 
-For modification:
-
-```text
-Change a harmless test field.
-```
-
-For deletion:
-
-```text
-Use a disposable test resource.
-```
+For deletion, use a disposable test resource.
 
 Avoid turning a vulnerability report into an incident report.
 
-### Step 12: Document the finding
+### Step 11: Document the finding
 
 A useful report should contain:
 
 ```text
 Title:
-Broken Object-Level Authorization in /api/orders/{id}
+Broken Object Level Authorization in /api/orders/{id}
 
 Affected endpoint:
 /api/orders/{id}
@@ -469,83 +518,74 @@ That is far more useful than:
 "IDOR found. Please fix."
 ```
 
-The latter technically communicates information, in the same way a smoke alarm technically communicates information while the house burns down.
+## Don't test only GET requests
 
-## A practical Burp Suite workflow
-
-A very simple workflow is:
-
-```text
-Browser
-   ↓
-Burp Proxy
-   ↓
-Capture request as User A
-   ↓
-Send to Repeater
-   ↓
-Change object ID
-   ↓
-Replay with User A session
-   ↓
-Compare response
-   ↓
-Repeat with User B / Admin
-```
-
-For larger assessments, create a small matrix of endpoints and authorization states:
-
-| Endpoint | User A own | User A → User B | User → Admin | Admin |
-|---|---:|---:|---:|---:|
-| `/api/profile/1` | ✅ | ❌ | ✅ | ✅ |
-| `/api/orders/1` | ✅ | ❌ | ✅ | ✅ |
-| `/api/orders/1` PATCH | ✅ | ❌ | ✅ | ✅ |
-| `/api/admin/users` | ❌ | ❌ | ✅ | ✅ |
-
-This makes gaps much easier to spot.
-
-## Don't rely on 403 responses alone
-
-A status code is useful, but it is not the vulnerability decision.
-
-These responses can still be dangerous:
-
-```text
-200 OK
-206 Partial Content
-304 Not Modified
-```
-
-Likewise, a `404` does not automatically mean the object is protected.
-
-Inspect the actual response.
-
-A request might return:
-
-```json
-{
-  "id": 1002,
-  "email": "victim@example.com",
-  "phone": "+..."
-}
-```
-
-while claiming everything is fine with a `200`.
-
-HTTP status codes are clues, not magical security certificates.
-
-## Testing modern applications
-
-For modern systems, extend the workflow beyond classic IDOR testing.
-
-### GraphQL
+Authorization problems also appear in state-changing operations.
 
 Test:
+
+```http
+GET
+POST
+PUT
+PATCH
+DELETE
+```
+
+Even if reading another user's profile is blocked, modifying it may not be.
+
+A missing authorization check on deletion can turn a minor information disclosure into a destructive vulnerability.
+
+## Check indirect identifiers too
+
+Developers sometimes replace numeric IDs with UUIDs:
+
+```text
+550e8400-e29b-41d4-a716-446655440000
+```
+
+That can make enumeration harder.
+
+It does **not** fix BOLA.
+
+An attacker can still obtain another object's UUID through:
+
+- API responses
+- search functionality
+- shared links
+- notifications
+- client-side JavaScript
+- GraphQL responses
+
+A random identifier is not an authorization mechanism.
+
+It is merely a harder-to-guess identifier.
+
+## Multi-tenant applications deserve extra attention
+
+SaaS applications are especially interesting because multiple organizations may share the same infrastructure.
+
+A user may be authenticated correctly but still be allowed to access another tenant's data.
+
+Always test authorization at the tenant boundary, not only at the user boundary.
+
+## GraphQL changes the testing strategy
+
+GraphQL applications require a slightly different mindset.
+
+Instead of dozens of predictable REST endpoints, you may have a single endpoint:
+
+```http
+POST /graphql
+```
+
+with queries such as:
 
 ```graphql
 query {
     user(id: 1043) {
         email
+        phone
         orders {
             id
         }
@@ -553,67 +593,70 @@ query {
 }
 ```
 
-Check whether individual resolvers enforce authorization.
+The application may enforce authorization on the GraphQL endpoint itself but forget to enforce it on specific resolvers.
 
-### JWT-based applications
+This can produce BOLA even when the GraphQL endpoint itself is fully authenticated.
 
-Do not assume that having a valid JWT means the application will correctly enforce authorization.
+## Watch for hidden authorization assumptions
 
-Check how claims such as:
+A common pattern looks like this:
+
+```python
+@app.get("/projects/{project_id}")
+def get_project(project_id):
+    return db.projects.get(project_id)
+```
+
+The code assumes that because the route requires a logged-in user, the object is safe to return.
+
+A safer implementation is:
+
+```python
+@app.get("/projects/{project_id}")
+def get_project(project_id, current_user):
+    project = db.projects.get(project_id)
+
+    if not project:
+        return 404
+
+    if project.owner_id != current_user.id:
+        return 403
+
+    return project
+```
+
+The authorization decision must happen where the resource is accessed.
+
+## A practical testing checklist
+
+When testing a new application, think in terms of **identity + object + action**.
+
+For each interesting request, ask:
 
 ```text
-role
-user_id
-tenant_id
-scope
+Who am I?
+What object am I accessing?
+What action am I performing?
+Who owns that object?
+What role should be required?
+What happens if I change the object identifier?
+What happens if I change the HTTP method?
+What happens if I remove or modify role-related parameters?
 ```
 
-are actually enforced server-side.
+A useful matrix looks like this:
 
-The important test is not "can I manipulate the token?"
+Test | User A | User B | Admin 
+ Read own object | ✔ | ✔ | ✔ 
+ Read another user's object | ✘ | ✘ | ✔
+ Modify own object | ✔ | ✔ | ✔ 
+ Modify another user's object | ✘ | ✘ | ✔
+ Delete another user's object | ✘ | ✘ | ✔
+ Access admin function | ✘ | ✘ | ✔
 
-It is:
+The exact permissions depend on the application.
 
-**Does changing authorization-relevant state result in an unauthorized action being accepted?**
-
-### Mass assignment
-
-Look for APIs that accept entire objects:
-
-```json
-{
-  "name": "Alice",
-  "role": "admin",
-  "is_verified": true
-}
-```
-
-If the server blindly maps client-controlled fields into privileged properties, authorization can fail even without a classic IDOR.
-
-## A compact methodology
-
-For real engagements, the workflow can be reduced to:
-
-```text
-1. Create controlled identities
-2. Map sensitive endpoints
-3. Identify object references
-4. Capture legitimate requests
-5. Test User A → User B
-6. Test User → Admin
-7. Test read + write + delete
-8. Test tenant boundaries
-9. Test alternate APIs
-10. Verify impact safely
-11. Document evidence
-12. Recommend server-side authorization controls
-```
-
-The key idea is simple:
-
-**Change the identity, change the object, change the action, and observe whether the server still enforces the intended policy.**
-
-That turns access-control testing from random parameter tampering into a repeatable methodology.
+The point is to make authorization explicit rather than relying on assumptions.
 
 ## How developers should prevent it
 
@@ -627,7 +670,7 @@ Not just the API gateway.
 
 Not just the middleware.
 
-The service handling the operation should know whether the current identity is allowed to perform it.
+The final service handling the operation should know whether the current identity is allowed to perform it.
 
 A good authorization architecture should therefore use:
 
@@ -657,7 +700,7 @@ That second architecture is surprisingly common.
 
 ## One final lesson for pentesters
 
-Do not treat access-control testing as a single "IDOR check."
+Do not treat access control testing as a single "IDOR check."
 
 Think about it as a map of trust boundaries.
 
@@ -677,8 +720,8 @@ Web → Mobile API
 
 The most interesting bugs often live between these boundaries.
 
-The uncomfortable lesson is also the useful one:
+The lesson is unpleasant but useful:
 
 **Authentication tells you who someone is. Authorization determines what they are allowed to do.**
 
-Confusing the two has kept security researchers employed for decades. Humanity's consistency is almost touching.
+And when an application exposes an object reference without enforcing the corresponding authorization policy, that is where the seemingly harmless distinction between **IDOR** and **BOLA** becomes a real security problem.
