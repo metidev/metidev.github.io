@@ -544,7 +544,11 @@ body {
 }
 
 .cur > * {
-  pointer-events: auto;
+  pointer-events: none;
+}
+
+body, body * {
+  cursor: none !important;
 }
 
 .cur-hint {
@@ -568,12 +572,9 @@ body {
   pointer-events: none;
   user-select: none;
 }
-.cur-blend .cur-word,
-.cur-spotlight .cur-word,
-.cur-magnet .cur-word { display: block; }
 
 .cursor {
-  position: absolute;
+  position: fixed;
   left: var(--x);
   top: var(--y);
   width: 14px;
