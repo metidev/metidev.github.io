@@ -1821,22 +1821,24 @@ const ContactSection = () => {
           on GitHub Pages without a backend.
         </p>
 
-        <div className="space-y-4 mt-8">
+        <div className="space-y-3 mt-8">
           <h3 className="text-sm text-[#67e8f9]/60 uppercase tracking-widest mb-2 border-b border-[#123f4d] inline-block pb-1">
             Known_Nodes
           </h3>
 
-          <a href="https://github.com/MetiDev" target="_blank" rel="noreferrer" className="flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
-            <Github size={18} className="mr-3" /> github.com/MetiDev
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a href="https://github.com/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+              <Github size={18} className="mr-2" /> github.com/MetiDev
+            </a>
 
-          <a href="https://medium.com/@MetiDev" target="_blank" rel="noreferrer" className="flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
-            <Medium size={18} className="mr-3" /> medium.com/@MetiDev
-          </a>
+            <a href="https://medium.com/@MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+              <Medium size={18} className="mr-2" /> medium.com/@MetiDev
+            </a>
 
-          <a href="https://linkedin.com/in/MetiDev" target="_blank" rel="noreferrer" className="flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
-            <Linkedin size={18} className="mr-3" /> in/MetiDev
-          </a>
+            <a href="https://linkedin.com/in/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+              <Linkedin size={18} className="mr-2" /> in/MetiDev
+            </a>
+          </div>
         </div>
       </div>
 
@@ -1978,14 +1980,34 @@ const NeonMatrixCursor = () => {
       }
     };
 
+    const onMouseLeave = () => {
+      const cursor = document.getElementById("matrix-cursor");
+      if (cursor) {
+        cursor.style.opacity = "0";
+      }
+    };
+
+    const onMouseEnter = () => {
+      const cursor = document.getElementById("matrix-cursor");
+      if (cursor) {
+        cursor.style.opacity = "1";
+      }
+    };
+
     document.addEventListener("mousemove", onMouseMove);
-    return () => document.removeEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseleave", onMouseLeave);
+    document.addEventListener("mouseenter", onMouseEnter);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseleave", onMouseLeave);
+      document.removeEventListener("mouseenter", onMouseEnter);
+    };
   }, [isMobile]);
 
   if (isMobile) return null;
 
   return (
-    <div id="matrix-cursor">
+    <div id="matrix-cursor" style={{ transition: "opacity 0.2s ease-out" }}>
       <svg width="16" height="18" viewBox="0 0 16 18">
         <path
           d="M1 1 L1 15 L4.6 11.8 L11.5 10.8 Z"
