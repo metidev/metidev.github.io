@@ -314,7 +314,9 @@ const markdownToHtml = (markdown: string) => {
   const flushCode = () => {
     if (!codeLines.length) return;
     if (codeLang === "mermaid") {
-      html.push(`<div class="mermaid">${codeLines.join("\n")}</div>`);
+      // Preserve the mermaid code with proper escaping for later rendering
+      const mermaidCode = codeLines.join("\n");
+      html.push(`<pre class="mermaid-source" data-mermaid="${escapeHtml(mermaidCode)}"></pre>`);
     } else {
       const langClass = codeLang ? ` class="language-${escapeHtml(codeLang)}"` : "";
       html.push(`<pre><code${langClass}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
@@ -1658,8 +1660,8 @@ const BlogSection = () => {
             ref={(el) => {
               if (el) {
                 setTimeout(async () => {
-                  const mermaidDivs = el.querySelectorAll(".mermaid:not([data-processed])");
-                  if (mermaidDivs.length === 0) return;
+                  const mermaidSources = el.querySelectorAll(".mermaid-source:not([data-rendered])");
+                  if (mermaidSources.length === 0) return;
 
                   if (!(window as unknown as { mermaid?: Record<string, unknown> }).mermaid) {
                     const script = document.createElement("script");
@@ -1680,16 +1682,26 @@ const BlogSection = () => {
                     });
                   }
 
-                  for (const div of mermaidDivs) {
+                  for (const source of mermaidSources) {
                     try {
+                      const mermaidCode = source.getAttribute("data-mermaid") || "";
+                      const decodedCode = mermaidCode
+                        .replace(/&amp;/g, "&")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#39;/g, "'");
                       const { svg } = await (window as unknown as { mermaid: { render: (id: string, text: string) => Promise<{ svg: string }> } }).mermaid.render(
                         `mermaid-${Math.random().toString(36).slice(2, 9)}`,
-                        div.textContent || ""
+                        decodedCode
                       );
-                      div.innerHTML = svg;
-                      div.setAttribute("data-processed", "true");
+                      const container = document.createElement("div");
+                      container.className = "mermaid";
+                      container.innerHTML = svg;
+                      source.parentNode?.replaceChild(container, source);
                     } catch (e) {
                       console.error("Mermaid error:", e);
+                      source.setAttribute("data-rendered", "error");
                     }
                   }
                 }, 100);
