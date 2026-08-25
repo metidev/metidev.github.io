@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FormEvent, KeyboardEvent } from "react";
 import {
@@ -1540,10 +1540,9 @@ const BlogSection = () => {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const articleRef = useRef<HTMLDivElement | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
-  const mermaidLoaded = useRef(false);
+  const progressRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onHashChange = () => setSlug(parseHash().slug);
@@ -1551,87 +1550,30 @@ const BlogSection = () => {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const renderMermaidDiagrams = useCallback(async () => {
-    const mermaidElements = articleRef.current?.querySelectorAll(".mermaid:not([data-processed])");
-    if (!mermaidElements?.length) return;
-
-    try {
-      if (!mermaidLoaded.current) {
-        const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "dark",
-          themeVariables: {
-            primaryColor: "#123f4d",
-            primaryTextColor: "#67e8f9",
-            primaryBorderColor: "#67e8f9",
-            lineColor: "#67e8f9",
-            secondaryColor: "#020c14",
-            tertiaryColor: "#0a1a1f",
-            fontFamily: "'Fira Code', monospace",
-          },
-        });
-        mermaidLoaded.current = true;
-      }
-
-      const mermaid = (await import("mermaid")).default;
-
-      for (const el of mermaidElements) {
-        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
-        try {
-          const { svg } = await mermaid.render(id, el.textContent || "");
-          el.innerHTML = svg;
-          el.setAttribute("data-processed", "true");
-        } catch (err) {
-          console.error("Mermaid render error:", err);
-          el.setAttribute("data-processed", "error");
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load mermaid:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!slug) return;
-
-    const timer = setTimeout(() => {
-      requestAnimationFrame(() => {
-        renderMermaidDiagrams();
-      });
-    }, 150);
-
-    return () => clearTimeout(timer);
-  }, [slug, renderMermaidDiagrams]);
-
   useEffect(() => {
     if (!slug) return;
 
     window.scrollTo({ top: 0 });
-    setProgress(0);
 
     const updateProgress = () => {
       const el = articleRef.current;
-      if (!el) return;
+      const progressEl = progressRef.current;
+      if (!el || !progressEl) return;
 
-      // Document-relative position (getBoundingClientRect is viewport-relative).
       const rect = el.getBoundingClientRect();
       const docTop = rect.top + window.scrollY;
       let pct: number;
 
       if (rect.height <= window.innerHeight) {
-        // Short article: fill as it passes through the viewport.
         const visible = window.scrollY + window.innerHeight - docTop;
         pct = (visible / rect.height) * 100;
       } else {
-        // Start when the article top reaches the viewport top,
-        // end when its bottom reaches the viewport bottom.
         const scrolled = window.scrollY - docTop;
         const total = rect.height - window.innerHeight;
         pct = (scrolled / total) * 100;
       }
 
-      setProgress(Math.min(100, Math.max(0, pct)));
+      progressEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
     };
 
     updateProgress();
@@ -1663,17 +1605,6 @@ const BlogSection = () => {
   const activePost = slug ? BLOG_INDEX.find((p) => p.slug === slug || p.id === slug) ?? null : null;
   const articleHtml = useMemo(() => (activePost ? markdownToHtml(activePost.body) : ""), [activePost]);
 
-  useEffect(() => {
-    if (articleHtml && slug) {
-      const timer = setTimeout(() => {
-        requestAnimationFrame(() => {
-          renderMermaidDiagrams();
-        });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [articleHtml, slug, renderMermaidDiagrams]);
-
   const allTags = [...new Set(BLOG_INDEX.flatMap((p) => p.tags))].sort();
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -1688,7 +1619,7 @@ const BlogSection = () => {
     return (
       <>
         {createPortal(
-          <div className="reading-progress" style={{ width: `${progress}%` }} aria-hidden="true" />,
+          <div ref={progressRef} className="reading-progress" style={{ width: "0%" }} aria-hidden="true" />,
           document.body
         )}
         <div className="animate-fade-in">
@@ -1721,9 +1652,48 @@ const BlogSection = () => {
           ) : null}
 
           <div
+            key={slug}
             className="post-content max-w-none text-[#67e8f9]/90"
-            dangerouslySetInnerHTML={{
-              __html: articleHtml,
+            dangerouslySetInnerHTML={{ __html: articleHtml }}
+            ref={(el) => {
+              if (el) {
+                setTimeout(async () => {
+                  const mermaidDivs = el.querySelectorAll(".mermaid:not([data-processed])");
+                  if (mermaidDivs.length === 0) return;
+
+                  if (!(window as unknown as { mermaid?: Record<string, unknown> }).mermaid) {
+                    const script = document.createElement("script");
+                    script.src = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
+                    await new Promise<void>((resolve) => {
+                      script.onload = () => resolve();
+                      document.head.appendChild(script);
+                    });
+                    (window as unknown as { mermaid: { initialize: (config: Record<string, unknown>) => void } }).mermaid.initialize({
+                      startOnLoad: false,
+                      theme: "dark",
+                      themeVariables: {
+                        primaryColor: "#123f4d",
+                        primaryTextColor: "#67e8f9",
+                        primaryBorderColor: "#67e8f9",
+                        lineColor: "#67e8f9",
+                      },
+                    });
+                  }
+
+                  for (const div of mermaidDivs) {
+                    try {
+                      const { svg } = await (window as unknown as { mermaid: { render: (id: string, text: string) => Promise<{ svg: string }> } }).mermaid.render(
+                        `mermaid-${Math.random().toString(36).slice(2, 9)}`,
+                        div.textContent || ""
+                      );
+                      div.innerHTML = svg;
+                      div.setAttribute("data-processed", "true");
+                    } catch (e) {
+                      console.error("Mermaid error:", e);
+                    }
+                  }
+                }, 100);
+              }
             }}
           />
 
