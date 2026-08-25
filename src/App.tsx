@@ -1925,7 +1925,20 @@ const ContactSection = () => {
 };
 
 const NeonMatrixCursor = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
+
     const CHARS = "アカサタナハマ01#$%*+-.<>/\\";
     const SPAWN_INTERVAL = 55;
     let lastSpawn = 0;
@@ -1967,7 +1980,9 @@ const NeonMatrixCursor = () => {
 
     document.addEventListener("mousemove", onMouseMove);
     return () => document.removeEventListener("mousemove", onMouseMove);
-  }, []);
+  }, [isMobile]);
+
+  if (isMobile) return null;
 
   return (
     <div id="matrix-cursor">
