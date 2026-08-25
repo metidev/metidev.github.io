@@ -1826,16 +1826,16 @@ const ContactSection = () => {
             Known_Nodes
           </h3>
 
-          <div className="flex flex-wrap gap-3">
-            <a href="https://github.com/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+          <div className="flex flex-col gap-2">
+            <a href="https://github.com/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center w-fit text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
               <Github size={18} className="mr-2" /> github.com/MetiDev
             </a>
 
-            <a href="https://medium.com/@MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+            <a href="https://medium.com/@MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center w-fit text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
               <Medium size={18} className="mr-2" /> medium.com/@MetiDev
             </a>
 
-            <a href="https://linkedin.com/in/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
+            <a href="https://linkedin.com/in/MetiDev" target="_blank" rel="noreferrer" className="inline-flex items-center w-fit text-[#67e8f9]/80 hover:text-glow hover:translate-x-2 transition-all">
               <Linkedin size={18} className="mr-2" /> in/MetiDev
             </a>
           </div>
