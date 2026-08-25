@@ -555,3 +555,40 @@ body {
   user-select: none;
   will-change: transform, opacity;
 }
+
+/* ─── Mermaid Diagrams ─── */
+.mermaid {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--phosphor-dim);
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node polygon {
+  fill: rgba(18, 63, 77, 0.5) !important;
+  stroke: var(--phosphor-primary) !important;
+}
+
+.mermaid .edgePath .path {
+  stroke: var(--phosphor-primary) !important;
+}
+
+.mermaid .edgeLabel {
+  background: var(--phosphor-bg) !important;
+  color: var(--phosphor-primary) !important;
+}
+
+.mermaid .cluster rect {
+  fill: rgba(18, 63, 77, 0.2) !important;
+  stroke: var(--phosphor-dim) !important;
+}

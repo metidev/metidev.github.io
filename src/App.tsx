@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FormEvent, KeyboardEvent } from "react";
 import {
@@ -313,8 +313,12 @@ const markdownToHtml = (markdown: string) => {
 
   const flushCode = () => {
     if (!codeLines.length) return;
-    const langClass = codeLang ? ` class="language-${escapeHtml(codeLang)}"` : "";
-    html.push(`<pre><code${langClass}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    if (codeLang === "mermaid") {
+      html.push(`<div class="mermaid">${codeLines.join("\n")}</div>`);
+    } else {
+      const langClass = codeLang ? ` class="language-${escapeHtml(codeLang)}"` : "";
+      html.push(`<pre><code${langClass}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    }
     codeLines = [];
     codeLang = "";
   };
@@ -513,6 +517,26 @@ const markdownToHtml = (markdown: string) => {
   if (inCode) flushCode();
 
   return html.join("\n");
+};
+
+const initMermaid = () => {
+  if (typeof window === "undefined") return;
+  const mermaid = (window as unknown as { mermaid?: { initialize: (config: Record<string, unknown>) => void; run: () => void } }).mermaid;
+  if (mermaid) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "dark",
+      themeVariables: {
+        primaryColor: "#123f4d",
+        primaryTextColor: "#67e8f9",
+        primaryBorderColor: "#67e8f9",
+        lineColor: "#67e8f9",
+        secondaryColor: "#020c14",
+        tertiaryColor: "#0a1a1f",
+        fontFamily: "'Fira Code', monospace",
+      },
+    });
+  }
 };
 
 const markdownModules = import.meta.glob(["./content/blog/*.md", "!./content/blog/README.md"], {
@@ -1519,12 +1543,66 @@ const BlogSection = () => {
   const [progress, setProgress] = useState(0);
   const articleRef = useRef<HTMLDivElement | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  const mermaidLoaded = useRef(false);
 
   useEffect(() => {
     const onHashChange = () => setSlug(parseHash().slug);
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  const renderMermaidDiagrams = useCallback(async () => {
+    const mermaidElements = articleRef.current?.querySelectorAll(".mermaid:not([data-processed])");
+    if (!mermaidElements?.length) return;
+
+    try {
+      if (!mermaidLoaded.current) {
+        const mermaid = (await import("mermaid")).default;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "dark",
+          themeVariables: {
+            primaryColor: "#123f4d",
+            primaryTextColor: "#67e8f9",
+            primaryBorderColor: "#67e8f9",
+            lineColor: "#67e8f9",
+            secondaryColor: "#020c14",
+            tertiaryColor: "#0a1a1f",
+            fontFamily: "'Fira Code', monospace",
+          },
+        });
+        mermaidLoaded.current = true;
+      }
+
+      const mermaid = (await import("mermaid")).default;
+
+      for (const el of mermaidElements) {
+        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+        try {
+          const { svg } = await mermaid.render(id, el.textContent || "");
+          el.innerHTML = svg;
+          el.setAttribute("data-processed", "true");
+        } catch (err) {
+          console.error("Mermaid render error:", err);
+          el.setAttribute("data-processed", "error");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load mermaid:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    const timer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        renderMermaidDiagrams();
+      });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [slug, renderMermaidDiagrams]);
 
   useEffect(() => {
     if (!slug) return;
@@ -1584,6 +1662,17 @@ const BlogSection = () => {
 
   const activePost = slug ? BLOG_INDEX.find((p) => p.slug === slug || p.id === slug) ?? null : null;
   const articleHtml = useMemo(() => (activePost ? markdownToHtml(activePost.body) : ""), [activePost]);
+
+  useEffect(() => {
+    if (articleHtml && slug) {
+      const timer = setTimeout(() => {
+        requestAnimationFrame(() => {
+          renderMermaidDiagrams();
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [articleHtml, slug, renderMermaidDiagrams]);
 
   const allTags = [...new Set(BLOG_INDEX.flatMap((p) => p.tags))].sort();
 

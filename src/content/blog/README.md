@@ -87,7 +87,26 @@ function hackThePlanet() {
   return true;
 }
 ```
+
+**Mermaid Diagrams:**
+```markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E
 ```
+
+**Supported Diagram Types:**
+- `graph` / `flowchart` - Flowcharts and process diagrams
+- `sequenceDiagram` - Sequence diagrams
+- `classDiagram` - Class diagrams
+- `stateDiagram` - State diagrams
+- `er` - Entity-relationship diagrams
+- `gantt` - Gantt charts
+- `pie` - Pie charts
 
 ---
 
@@ -151,6 +170,34 @@ CSRF | Medium | 5.4 | Pending
 **Images with Captions:**
 ```markdown
 ![Architecture Diagram](https://example.com/diagram.png)
+```
+
+---
+
+### 📋 Task Lists
+
+```markdown
+- [x] Reconnaissance complete
+- [x] Vulnerability identified
+- [ ] Exploit development
+- [ ] Write report
+```
+
+**Result:**
+- [x] Reconnaissance complete
+- [x] Vulnerability identified
+- [ ] Exploit development
+- [ ] Write report
+
+---
+
+### 📊 Tables
+
+```markdown
+| Vulnerability | Severity | CVSS | Status |
+|:--------------|:--------:|-----:|--------|
+| SQL Injection | Critical | 9.8 | Fixed |
+| XSS | High | 7.5 | Open |
 ```
 
 ---

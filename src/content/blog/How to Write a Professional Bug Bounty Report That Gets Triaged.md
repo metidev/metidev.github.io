@@ -34,6 +34,33 @@ A strong report normally answers five questions:
 5. What should the program fix?
 ```
 
+### The Report Writing Flow
+
+```mermaid
+graph TD
+    A[🔍 Discover Vulnerability] --> B{Is it reproducible?}
+    B -->|Yes| C[📝 Write Clear Title]
+    B -->|No| D[🔧 Refine Steps]
+    D --> B
+    C --> E[📍 Identify Affected Asset]
+    E --> F[📋 Document Steps to Reproduce]
+    F --> G[🎥 Add Proof of Concept]
+    G --> H[💥 Demonstrate Impact]
+    H --> I[🛠️ Suggest Remediation]
+    I --> J{Choose Platform}
+    J -->|HackerOne| K[Use HackerOne Template]
+    J -->|Bugcrowd| L[Use Bugcrowd Template]
+    J -->|Other| M[Use Generic Template]
+    K --> N[📤 Submit Report]
+    L --> N
+    M --> N
+    N --> O[🎯 Get Triaged & Paid]
+
+    style A fill:#123f4d,stroke:#67e8f9,color:#67e8f9
+    style N fill:#123f4d,stroke:#67e8f9,color:#67e8f9
+    style O fill:#0a1a1f,stroke:#ff2a6d,color:#ff2a6d
+```
+
 The exact fields depend on the platform and the individual program. Some programs add custom fields or their own report templates, so the program policy should always take priority. HackerOne, for example, allows programs to configure custom report templates and additional information fields.
 
 A useful universal structure is:
@@ -60,6 +87,16 @@ The underlying vulnerability does not change because you submitted it to a diffe
 The **format around it does**.
 
 Trying to submit exactly the same giant report everywhere is a good way to make humans regret inventing websites.
+
+### Platform Comparison
+
+| Feature | HackerOne | Bugcrowd | Generic |
+|---------|-----------|----------|---------|
+| Asset Type Selection | ✅ Required | ✅ Required | ❌ Manual |
+| Custom Templates | ✅ Program-defined | ❌ Fixed | ❌ Fixed |
+| Severity Field | ⚡ Optional | ⚡ Required | ⚡ Optional |
+| Weakness Category | ✅ CVSS-based | ✅ VRT-based | ❌ Free text |
+| Attached Media | ✅ Unlimited | ✅ Unlimited | ⚡ Varies |
 
 ### HackerOne
 
@@ -256,46 +293,44 @@ BOLA in GET /api/orders/{id}
 
 Keep the report focused:
 
-```text
-Summary
-↓
-Steps to Reproduce
-↓
-Expected / Actual
-↓
-Impact
-↓
-Evidence
+```mermaid
+graph TD
+    A[Summary] --> B[Steps to Reproduce]
+    B --> C[Expected / Actual]
+    C --> D[Impact]
+    D --> E[Evidence]
+
+    style A fill:#123f4d,stroke:#67e8f9,color:#67e8f9
+    style E fill:#123f4d,stroke:#67e8f9,color:#67e8f9
 ```
 
 ### Bugcrowd
 
 Structure the description around its explicit concepts:
 
-```text
-Overview
-↓
-Walkthrough / POC
-↓
-Vulnerability Evidence
-↓
-Demonstrated Impact
+```mermaid
+graph TD
+    A[Overview] --> B[Walkthrough / POC]
+    B --> C[Vulnerability Evidence]
+    C --> D[Demonstrated Impact]
+
+    style A fill:#123f4d,stroke:#67e8f9,color:#67e8f9
+    style D fill:#123f4d,stroke:#67e8f9,color:#67e8f9
 ```
 
 ### Other platforms
 
 Use:
 
-```text
-Summary
-↓
-Technical Details
-↓
-Reproduction
-↓
-Impact
-↓
-Remediation
+```mermaid
+graph TD
+    A[Summary] --> B[Technical Details]
+    B --> C[Reproduction]
+    C --> D[Impact]
+    D --> E[Remediation]
+
+    style A fill:#123f4d,stroke:#67e8f9,color:#67e8f9
+    style E fill:#123f4d,stroke:#67e8f9,color:#67e8f9
 ```
 
 The **evidence remains identical**.
