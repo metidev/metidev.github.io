@@ -705,11 +705,51 @@ const NavigationHUD = ({
 }) => {
   const [time, setTime] = useState(() => formatClock(new Date()));
   const foundFlags = useCtf();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
+  const [connectionType, setConnectionType] = useState<string>("unknown");
+  const [isVisible, setIsVisible] = useState(!document.hidden);
 
   useEffect(() => {
     const timer = window.setInterval(() => setTime(formatClock(new Date())), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    const handleVisibility = () => setIsVisible(!document.hidden);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    if ("getBattery" in navigator) {
+      (navigator as unknown as { getBattery: () => Promise<{ level: number; charging: boolean; addEventListener: (e: string, h: () => void) => void }> })
+        .getBattery()
+        .then((b) => {
+          setBattery({ level: Math.round(b.level * 100), charging: b.charging });
+          b.addEventListener("levelchange", () => setBattery({ level: Math.round(b.level * 100), charging: b.charging }));
+          b.addEventListener("chargingchange", () => setBattery({ level: Math.round(b.level * 100), charging: b.charging }));
+        })
+        .catch(() => {});
+    }
+
+    const conn = (navigator as unknown as { connection?: { effectiveType?: string } }).connection;
+    if (conn) {
+      setConnectionType(conn.effectiveType ?? "unknown");
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
+
+  const sysStatus = isVisible ? "OPTIMAL" : "IDLE";
+  const uplinkStatus = isOnline ? "SECURE" : "DOWN";
+  const batteryText = battery ? `${battery.level}%${battery ? " ⚡" : ""}` : "N/A";
 
   const tabs: Array<{ id: TabId; label: string; icon: typeof Terminal }> = [
     { id: "home", label: "/sys/home", icon: Terminal },
@@ -729,17 +769,17 @@ const NavigationHUD = ({
           >
             <Lock size={11} className="mr-1" /> CTF {foundFlags.length}/{FLAGS.length}
           </span>
-          <span className="flex items-center">
-            <Wifi size={14} className="mr-1" /> UPLINK: SECURE
+          <span className="flex items-center" title={`Network: ${isOnline ? "Connected" : "Disconnected"} (${connectionType})`}>
+            <Wifi size={14} className="mr-1" /> UPLINK: {uplinkStatus}
           </span>
-          <span className="hidden sm:flex items-center">
-            <Activity size={14} className="mr-1" /> SYS: OPTIMAL
+          <span className="hidden sm:flex items-center" title={`Page visibility: ${isVisible ? "Visible" : "Hidden"}`}>
+            <Activity size={14} className="mr-1" /> SYS: {sysStatus}
           </span>
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="flex items-center">
-            <Battery size={14} className="mr-1" /> 98%
+          <span className="flex items-center" title={battery ? `Battery: ${battery.level}% ${battery.charging ? "(Charging)" : ""}` : "Battery info unavailable"}>
+            <Battery size={14} className="mr-1" /> {batteryText}
           </span>
           <span className="flex items-center font-terminal text-base">
             <Clock size={14} className="mr-1" /> {time}
