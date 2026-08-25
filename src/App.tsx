@@ -749,7 +749,7 @@ const NavigationHUD = ({
 
   const sysStatus = isVisible ? "OPTIMAL" : "IDLE";
   const uplinkStatus = isOnline ? "SECURE" : "DOWN";
-  const batteryText = battery ? `${battery.level}%${battery ? " ⚡" : ""}` : "N/A";
+  const batteryText = battery ? `${battery.level}%${battery ? "" : ""}` : "N/A";
 
   const tabs: Array<{ id: TabId; label: string; icon: typeof Terminal }> = [
     { id: "home", label: "/sys/home", icon: Terminal },
