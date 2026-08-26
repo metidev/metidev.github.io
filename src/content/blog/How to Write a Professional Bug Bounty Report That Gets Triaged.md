@@ -38,23 +38,23 @@ A strong report normally answers five questions:
 
 ```mermaid
 graph TD
-    A[🔍 Discover Vulnerability] --> B{Is it reproducible?}
-    B -->|Yes| C[📝 Write Clear Title]
-    B -->|No| D[🔧 Refine Steps]
+    A[ Discover Vulnerability] --> B{Is it reproducible?}
+    B -->|Yes| C[ Write Clear Title]
+    B -->|No| D[ Refine Steps]
     D --> B
-    C --> E[📍 Identify Affected Asset]
-    E --> F[📋 Document Steps to Reproduce]
-    F --> G[🎥 Add Proof of Concept]
-    G --> H[💥 Demonstrate Impact]
-    H --> I[🛠️ Suggest Remediation]
+    C --> E[ Identify Affected Asset]
+    E --> F[ Document Steps to Reproduce]
+    F --> G[ Add Proof of Concept]
+    G --> H[ Demonstrate Impact]
+    H --> I[ Suggest Remediation]
     I --> J{Choose Platform}
     J -->|HackerOne| K[Use HackerOne Template]
     J -->|Bugcrowd| L[Use Bugcrowd Template]
     J -->|Other| M[Use Generic Template]
-    K --> N[📤 Submit Report]
+    K --> N[ Submit Report]
     L --> N
     M --> N
-    N --> O[🎯 Get Triaged & Paid]
+    N --> O[ Get Triaged & Paid]
 
     style A fill:#123f4d,stroke:#67e8f9,color:#67e8f9
     style N fill:#123f4d,stroke:#67e8f9,color:#67e8f9
@@ -90,13 +90,12 @@ Trying to submit exactly the same giant report everywhere is a good way to make 
 
 ### Platform Comparison
 
-| Feature | HackerOne | Bugcrowd | Generic |
-|---------|-----------|----------|---------|
-| Asset Type Selection | ✅ Required | ✅ Required | ❌ Manual |
-| Custom Templates | ✅ Program-defined | ❌ Fixed | ❌ Fixed |
-| Severity Field | ⚡ Optional | ⚡ Required | ⚡ Optional |
-| Weakness Category | ✅ CVSS-based | ✅ VRT-based | ❌ Free text |
-| Attached Media | ✅ Unlimited | ✅ Unlimited | ⚡ Varies |
+ Feature | HackerOne | Bugcrowd | Generic 
+ Asset Type Selection | Required | Required | Manual 
+ Custom Templates | Program-defined | Fixed | Fixed 
+ Severity Field | Optional | Required | Optional 
+ Weakness Category | CVSS-based | VRT-based | Free text 
+ Attached Media | Unlimited | Unlimited | Varies 
 
 ### HackerOne
 
